@@ -21,16 +21,13 @@ private:
 	std::vector<Item> item_data;		//For Item assets
 	std::vector<Mob> mob_data;			//For Mob assets
 	std::vector<Threat> threat_data;	//For Threat assets
-	std::vector<std::unique_ptr<NPC>> npc_data; //For NPC assets Note: This was experimentally attempting polymorphism, but the reasoning for doing so has been
-	//determined to be ill-formed and not best done using polymorphism. Up to be changed to a normal object-based vector in the future to be more like Item and BaseItem
-	//instead of storying all derived NPC classes in one vector of unique pointers
+	std::vector<Merchant> merchant_data;//For Merchant assets
 
 	std::vector<Player> player;		//Stores the actual player objects in the game
 	std::vector<BaseItem> base_items;//For actual baseitem objects
 	std::vector<Item> items;		//For actual item objects
 	std::vector<Mob> mobs;			//For actual mob objects
-	std::vector<Threat> threats;	//For actual threat objects
-	std::vector<std::unique_ptr<NPC>> npcs;
+	std::vector<Merchant> merchants;
 
 	//Not actually done anything with for the moment
 	std::vector<int> used_items_id;	//Keeps track of the IDs of items that have been completely used up
@@ -38,7 +35,6 @@ private:
 
 	//Default options variables (Not to be changed while in game, like the _data vectors
 	int map_xsize, map_ysize;
-	int player_start_xcoord, player_start_ycoord;
 	int magical_potion_xcoord, magical_potion_ycoord;
 
 	char user_input;
@@ -64,64 +60,62 @@ private:
 	//Printing functions
 	void printMap() const;								//Shows the game board
 	void printTimeLeft() const;							//Prints the time left to complete the game
-	void printPlayerDetails() const;					//Prints the hero's hp,	exp, level, equipped weapon, inventory slots
+	void printPlayerDetails(Player& player) const;		//Prints the hero's hp,	exp, level, equipped weapon, inventory slots
 	void printInventory() const;
-	void printPlayerPosition() const;
+	void printPlayerPosition(Player& player) const;
 	void printVictoryMessage() const;					//Congratulates player on winning
 	void printGameOverMessage() const;					//Game over message
-	void printObjectsOnPlayerTileDetails() const;			//Prints what(Item/entity) is on the same tile as the player
+	void printObjectsOnTileDetails(int xcoord, int ycoord) const;			//Prints what(Item/entity) is on the same tile as the player
 	void printAvailablePlayerActions() const;			//Print available options the player can take
-	//void printNoSavePresent(char save_number) const;
 
+	//Functions that deal with player action
 	void evaluatePlayerAction();
 	void evaluatePossibleEncounter();
-	void useHealingItemSlot(int inventory_slot_number);
-	void useWeaponItemSlot(int inventory_slot_number);
 	bool isPlayerActionValid();							//Note: Changes the action of the player if valid
-	bool playerMoveMenu();						//Note: Changes the action of the player if valid (Specific case of isPlayerActionValid()
+
+	//Sub-menu functions
+	bool playerMoveMenu();							//Note: Changes the action of the player if valid (Specific case of isPlayerActionValid()
 	bool useItemMenu();
 	bool swapItemMenu();							//Note: Changes the action of the player if valid (Specific case of isPlayerActionValid()
 	void inspectMenu();								//Note: Not an actual player action, only tells the player details about items
 	void printItemDetails(Item& item) const;
 	void printItemDetails(BaseItem& base_item) const;
 	void talkToNPCMenu();
-	void npcBuyMenu(Merchant* merchant);
-	void npcSellMenu(Merchant* merchant);
+	void merchantTalkMenu(Merchant& merchant);
+	void npcBuyMenu(Merchant& merchant);
+	void npcSellMenu(Merchant& merchant);
 
+	void playerMove(Player& player); //Not only moves the player but also sets visibility and explored elements of maptiles
+	void playerMoveRandomDirection(Player& player);
+	void setVisibilityAround(const Entity& entity, bool new_visibility);
+	void useHealingItemSlot(int inventory_slot_number);
+	void useWeaponItemSlot(int inventory_slot_number);
+	void logUsedItem(int item_id) { used_items_id.push_back(item_id); }		//Note: This logs to the game for it to note which items are used, not for player
+	void logDeadMob(int entity_id) { dead_mobs_id.push_back(entity_id); }	//Note: This logs to the game for it to note which mobs are dead, not for player
+	void swapItems(Player& player, int inventory_slot_number);
+	void checkSurroundings(const Entity& entity);
+
+	//Non-player event functions
+	void evaluateEvents();
 	void advanceTime(double time_to_pass);
 	bool noTimeLeft() const;
 	bool playerDied() const;
 	bool playerHasMagicalPotion() const;
 
-	void logUsedItem(int item_id) { used_items_id.push_back(item_id); }		//Note: This logs to the game for it to note which items are used, not for player
-	void logDeadMob(int entity_id) { dead_mobs_id.push_back(entity_id); }	//Note: This logs to the game for it to note which mobs are dead, not for player
-
-	void playerMove(Player& player); //Not only moves the player but also sets visibility and explored elements of maptiles
-	void playerMoveRandomDirection(Player& player);
-	void setVisibilityAround(const Entity& entity, bool new_visibility);
-	void checkSurroundings(const Entity& entity);
-
-	void evaluateEvents();
-
+	//Generic Entity functions
 	bool canMoveUp(const Entity& entity) const;
 	bool canMoveLeft(const Entity& entity) const;
 	bool canMoveRight(const Entity& entity) const;
 	bool canMoveDown(const Entity& entity) const;
 
-	void initializeDefaultValues()
-	{
-		Game::need_update_map = false;
-		Game::game_state = GameState::ONGOING;
-		Game::time_left = max_time;
-		Game::current_time = 0;
-	}
+	void initializeDefaultValues();
 	void start(); //Start Game
 	void cleanUpGame();
 public:
 	Game() 
 	{
-		Game::loadOptions();			//Load Options.dat for default options
 		Game::loadData();				//Load Data.dat for entities and items
+		Game::loadOptions();			//Load Options.dat for default options
 		Game::loadNPCs();				//Load NPCs.dat for NPCs
 	}
 

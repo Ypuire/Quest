@@ -20,7 +20,7 @@ enum class EntityType
 	PLAYER,
 	MOB,
 	THREAT,
-	NPC
+	MERCHANT,
 };
 
 class BaseItem
@@ -47,6 +47,7 @@ public:
 	int getYCoord() const { return m_ycoord; }
 	int getCoords(int& xcoord, int& ycoord) const { xcoord = m_xcoord; ycoord = m_ycoord; }
 	int getValue() const { return m_value; }
+
 	void setXCoord(int new_xcoord) { m_xcoord = new_xcoord; }
 	void setYCoord(int new_ycoord) { m_ycoord = new_ycoord; }
 	void setCoords(int new_xcoord, int new_ycoord) { m_xcoord = new_xcoord; m_ycoord = new_ycoord; }
@@ -79,6 +80,7 @@ public:
 	int getMaxHpChange() const { return m_max_hp_change; }
 	int getUses() const { return m_uses; }
 	double getSuccessRate() const { return m_success_rate; }
+
 	void decrementUses() { --m_uses; }
 };
 
@@ -132,6 +134,7 @@ public:
 	int getXCoord() const { return m_xcoord; }
 	int getYCoord() const { return m_ycoord; }
 	void getCoords(int& xcoord, int& ycoord) const { xcoord = m_xcoord; ycoord = m_ycoord; }
+
 	void setXCoord(int new_xcoord) { m_xcoord = new_xcoord; }
 	void setYCoord(int new_ycoord) { m_ycoord = new_ycoord; }
 	void setCoords(int new_xcoord, int new_ycoord) { m_xcoord = new_xcoord; m_ycoord = new_ycoord; }
@@ -153,10 +156,11 @@ public:
 	{}
 
 	bool valid();
+
 	double getRunChance() const { return m_run_chance; }
 };
 
-class Threat
+class Threat final
 {
 private:
 	std::string m_name;
@@ -184,7 +188,7 @@ class Player final : public Entity
 private:
 	ItemType m_inventory_item_type[4];
 	int m_inventory_id[4];
-	//int m_equipped_slot;
+	//Add equipped slots in the future
 
 	Action m_action;
 
@@ -197,21 +201,17 @@ public:
 		m_inventory_item_type{ inventory1_item_type ,inventory2_item_type ,inventory3_item_type ,inventory4_item_type },
 		m_inventory_id{ inventory1_id ,inventory2_id, inventory3_id, inventory4_id }
 	{
-		//if (m_level != 1)
-		//{
-		//	scaleStatsToLevel();//scale hp, max hp, def
-		//}
-		//equipped slot
+		//Scale level
 	}
 
 	bool valid(int item_size);
+
 	bool isInventoryFull();
-	//int getEncounterID() const { return m_encounterID; }
 	int getInventorySlotItemID(int inventory_slot_number) const { return m_inventory_id[inventory_slot_number - 1]; } //Insert inventory slot number, not index
 	ItemType getInventorySlotItemType(int inventory_slot_number) const { return m_inventory_item_type[inventory_slot_number - 1]; }
 	int getEmptyInventorySlot();
-	//const std::vector<int>& getInventoryItemIDs() const{ return m_inventory_item_ids; } Future change player inventory to being variable in size
 	Action getAction() const { return m_action; }
+
 	void setAction(Action action) { m_action = action; }
 	void setInventorySlotItem(int inventory_slot_number, ItemType new_item_type, int new_item_id);
 	bool runFrom(Mob& mob);

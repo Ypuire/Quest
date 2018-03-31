@@ -49,3 +49,27 @@ Additional notes:
 - There is a chance that if the number of entities to be generated is directly equal to that of the mapsize, and the last
 entity to be generated is a threat, and the last tile without an entity is the magical potion, game could infinite loop (unconfirmed)
 - All these will be fixed in a future update
+
+Version 0.3.1 Code Patch
+02 Feb 2018
+--------------------------------------------------
+Description: Small patch with a few minor fixes,
+mostly not intended to add or change features,
+focuses on rebuilding some parts of the game with
+revised source code
+
+Data:
+- Fixes: Will not infinite loop if number of entities to be generated equal to mapsize
+
+NPCs:
+- Fixes: Items generated in inventories were mistakenly added to the check if there were too many items to generate for mapsize
+- Fixes: Conflicts in coordinates of NPCs will now be flagged up
+
+Gameplay:
+- Changes: Some messages such as printing what objects are on the same tile as the player are changed
+- Changes: Game now prints if there is nothing on the tile
+- Changes: Game now prints time passed before any other events
+- Changes: Game now prints more specific event messages when picking up/swapping/dropping items
+- Changes: Game used to display only how much a healing item would have healed, not actually heal (If player at/near max health)
+- Fixes: Game message says that there is no item in that inventory slot if user inspects a tile with nothing on it
+- Fixes: Game did not reprint map after using item despite not being in encounter

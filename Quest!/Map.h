@@ -45,54 +45,23 @@ private:
 	int m_ysize;
 	std::vector<std::vector<MapTile> > maptile;
 
-	void initializeMap()
-	{
-		maptile.resize(m_xsize);
-		for (int i = 0; i < m_xsize; ++i)
-		{
-			maptile.at(i).resize(m_ysize);
-		}
-	}
+	void initializeMap();
+
 public:
 
 	//Clears all maptiles held by this map object, setting size to 0 and deallocating all maptiles
-	void clear()
-	{
-		m_xsize = 0;
-		m_ysize = 0;
-		maptile.clear();
-	}
+	void clear();
 
 	//Note: Does not clear any pre-existing tiles. Does nothing if there are existing tiles uncleared
-	void initializeNewMap(int xsize, int ysize)
-	{
-		if (maptile.size() == 0) //Initialize only if maptiles non-existent
-		{
-			m_xsize = xsize;
-			m_ysize = ysize;
-			initializeMap();	//Default initializes all MapTiles
-		}
-	}
+	void initializeNewMap(int xsize, int ysize);
 
 
 	int getXSize() const { return m_xsize; }
 	int getYSize() const { return m_ysize; }
 
-	void getRandomTileWithoutItemCoords(int& xcoord, int& ycoord)
-	{
-		do {
-			xcoord = getRandomInt(0, m_xsize - 1);
-			ycoord = getRandomInt(0, m_ysize - 1);
-		} while ((maptile[xcoord][ycoord].getItemType() != ItemType::NOTHING));
-	}
+	void getRandomTileWithoutItemCoords(int& xcoord, int& ycoord);
 
-	void getRandomTileWithoutEntityCoords(int& xcoord, int& ycoord)
-	{
-		do {
-			xcoord = getRandomInt(0, m_xsize - 1);
-			ycoord = getRandomInt(0, m_ysize - 1);
-		} while ((maptile[xcoord][ycoord].getEntityType() != EntityType::NOTHING));
-	}
+	void getRandomTileWithoutEntityCoords(int& xcoord, int& ycoord);
 
 	MapTile& operator()(const int x, const int y) { return maptile[x][y]; }
 	const MapTile& operator()(const int x, const int y) const { return maptile[x][y]; }

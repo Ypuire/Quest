@@ -60,7 +60,7 @@ public:
 		}
 	}
 
-	//Discards comments from the filereader stream
+	//Discards comments and whitespace from the filereader stream
 	//Comment syntax #1: When double slashes "//" are encountered, discards all characters until a newline character
 	//Comment syntax #2: If only a single slash is encountered, discard all characters until next slash
 	void clearWhitespaceAndComments()
@@ -105,7 +105,6 @@ public:
 		m_filereader.get(); //Skip the first double quote and get into the actual string to be read
 		while (true)
 		{
-			clearWhitespaceAndComments();
 			if (eof())
 			{
 				m_error_msg = "Data loader unexpectedly reached end of file. Did you forget the closing \" for data within \"\"s?";

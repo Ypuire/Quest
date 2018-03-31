@@ -1,0 +1,27 @@
+//Comments:
+//Double slashes will comment out everything until the start of next line
+/Double slashes with at least one character between then ignore everything
+within the slashes/
+
+//Options.dat
+//
+//Default options for the game can be changed here
+//Set up map size, the time limit, and the player and magical potion's starting positions
+
+//Map size
+/Horizontal size/ 10
+/Vertical size/ 10
+
+
+//Maximum time (In whole days) that can be taken to complete the game
+/Max time/ 100
+
+
+//Player starting position
+/X coordinate/ 0
+/Y coordinate/ 0
+
+
+//Magical potion starting position
+/X coordinate/ 9
+/Y coordinate/ 9

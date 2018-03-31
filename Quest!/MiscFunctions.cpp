@@ -11,7 +11,7 @@
 //
 namespace CONSTANTS
 {
-	constexpr char* VERSION_NUMBER = "v0.2.0";
+	constexpr char* VERSION_NUMBER = "v0.3.0";
 }
 
 //Utility functions
@@ -43,11 +43,6 @@ void printMainMenuMsg()
 	std::cout << "Welcome to Mini Quest main menu, version " << CONSTANTS::VERSION_NUMBER << " " << __DATE__ << " " << __TIME__ << std::endl;
 	std::cout << "1)Start quick game (With default settings)\n" << "2)Start new game\n" << "3)Load saved game\n" << "e)Exit" << std::endl;
 }
-
-//void getUserInput(char& user_input)
-//{
-//	std::cin >> user_input;
-//}
 
 void printInvalidOption()
 {

@@ -3,32 +3,53 @@
 /Double slashes with at least one character between then ignore everything
 within the slashes/
 
-//Syntax for items:
+//Data.dat
+//
+//Define all the data values for each item, mob and threat that you want in the game
+//The starting values for a player's HP, gold, etc can also be changed here
+
+//Syntax for base (Non-usable) items:
 //Code 0
+//Item type 0
 //Name of item within double quotes
-//Item type (0 for healing items, 1 for weapons)
+//Value
+//Number of this item to spawn on the map
+
+//Syntax for usable items:
+//Code 0
+//Item type (1 for healing items, 2 for weapons)
+//Name of item within double quotes
 //Min heal/damage amount
 //Max heal/damage amount
 //Number of uses
 //Success rate of the item
+//Value of the item (In shop)
 //Number of this item to spawn on the map
 
 /Item code/ 0
-/Name of Item/ "Medicine"
 /Item type/ 0
+/Name of Item/ "Gold ring"
+/Value/ 35
+/Number to spawn on map/ 10
+
+/Item code/ 0
+/Item type/ 1
+/Name of Item/ "Medicine"
 /Minimum heal or damage/ 20
 /Maximum heal or damage/ 35
 /Number of uses/ 1
-/Success rate/ 80.0
+/Success rate/ 75.0
+/Value/ 20
 /Number to spawn on map/ 20
 
 /Item code/ 0
+/Item type/ 2
 /Name of Item/ "Weapon"
-/Item type/ 1
 /Minimum heal or damage/ 40
 /Maximum heal or damage/ 50
 /Number of uses/ 1
-/Success rate/ 100.0
+/Success rate/ 85.00
+/Value/ 10
 /Number to spawn on map/ 30
 
 //Syntax for Player:
@@ -36,49 +57,57 @@ within the slashes/
 //Name of player within double quotes
 //Max HP
 //Starting HP
-//Starting Defense value (Not implemented)
-//Starting EXP (Not implemented)
-//Starting level (Not implemented)
-//Starting inventory slot 1 item ID (-1 for nothing, 0 for first item defined above)
-//Starting inventory slot 2 item ID (-1 for nothing, 0 for first item defined above)
-//Starting inventory slot 3 item ID (-1 for nothing, 0 for first item defined above)
-//Starting inventory slot 4 item ID (-1 for nothing, 0 for first item defined above)
+//Starting Attack value
+//Starting Defense value (At least 1)
+//Starting EXP (At least 0)
+//Starting level (At least 1)
+//Starting inventory slot 1 item ID (-1 for nothing, 0 for first item defined above, item_typeid)
+//Starting inventory slot 2 item ID (-1 for nothing, 0 for first item defined above, item_typeid)
+//Starting inventory slot 3 item ID (-1 for nothing, 0 for first item defined above, item_typeid)
+//Starting inventory slot 4 item ID (-1 for nothing, 0 for first item defined above, item_typeid)
+//Starting gold
 
 /Player code/ 1
 /Name of Player/ "Player"
 /Max HP/ 100
 /HP/ 100
-/Def/ 0
+/Atk/ 1
+/Def/ 1
 /EXP/ 0
 /Level/ 1
 /Inv slot 1 item ID/ -1
-/Inv slot 1 item ID/ -1
+/Inv slot 1 item ID/ 2
 /Inv slot 1 item ID/ 0
 /Inv slot 1 item ID/ 1
+/Gold/ 30
 
 //Syntax for Mobs:
 //Code 2
 //Name of mob within double quotes
 //Max HP
 //Starting HP
-//Starting Defense value (Not implemented)
+//Starting Attack value
+//Starting Defense value (At least 1)
 //Min heal/damage amount
 //Max heal/damage amount
-//Starting EXP (Not implemented)
-//Starting level (Not implemented)
+//Starting EXP (At least 0)
+//Starting level (At least 1)
 //Player's run chance from this mob (From 0 to 100 up to 5 dp)
+//Gold dropped per kill
 //Number of this mob to spawn on the map
 
 /Mob code/ 2
 /Name of Mob/ "Mob"
-/Max HP/ 100
-/HP/ 100
-/Def/ 0
+/Max HP/ 50
+/HP/ 50
+/Atk/ 1
+/Def/ 1
 /Min damage/ 12
 /Max damage/ 20
-/EXP/ 0
+/EXP/ 5
 /Level/ 1
 /Run chance/ 80.0
+/Gold/ 15
 /Number to spawn on map/ 20
 
 //Syntax for Threats:

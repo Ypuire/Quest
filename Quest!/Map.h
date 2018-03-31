@@ -54,22 +54,24 @@ private:
 		}
 	}
 public:
-	bool initialized; //Temporary measure, remove in future when map size can be determined and loaded from Data.dat
 
+	//Clears all maptiles held by this map object, setting size to 0 and deallocating all maptiles
 	void clear()
 	{
 		m_xsize = 0;
 		m_ysize = 0;
-		initialized = false;
 		maptile.clear();
 	}
 
-	void initializeNewMap(int new_xsize, int new_ysize) //Note: Does not clear any pre-existing tiles if any
+	//Note: Does not clear any pre-existing tiles. Does nothing if there are existing tiles uncleared
+	void initializeNewMap(int xsize, int ysize)
 	{
-		m_xsize = new_xsize;
-		m_ysize = new_ysize;
-		initializeMap();		//Default initializes all MapTiles
-		initialized = true;
+		if (maptile.size() == 0) //Initialize only if maptiles non-existent
+		{
+			m_xsize = xsize;
+			m_ysize = ysize;
+			initializeMap();	//Default initializes all MapTiles
+		}
 	}
 
 

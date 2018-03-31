@@ -1,5 +1,12 @@
 #include "ItemsAndEntities.h"
 
+bool BaseItem::valid()
+{
+	if (m_value < 0)
+		return false;
+	return true;
+}
+
 bool Item::valid() //Checks if the data inside is valid or not (e.g. no negative hp values)
 {
 	if (m_min_hp_change < 0 || m_max_hp_change < m_min_hp_change)
@@ -7,6 +14,8 @@ bool Item::valid() //Checks if the data inside is valid or not (e.g. no negative
 	if (m_uses < 0)
 		return false;
 	if (m_success_rate < 0.0 || m_success_rate > 100.0)
+		return false;
+	if (m_value < 0)
 		return false;
 	return true;
 }
@@ -35,6 +44,47 @@ void Entity::takeDamage(int damage_amount)
 	}
 }
 
+void Player::gainExp(int exp_to_add)
+{
+	m_exp += exp_to_add;
+	if (m_exp >= 5)
+	{
+		while (m_exp >= 5) //Currently, 5 exp to level up
+		{
+			m_exp -= 5;
+			levelUp();
+		}
+	}
+	else
+	{
+		return;
+	}
+}
+
+//Level up, atk/def/mindmg/maxdmg/maxhp will increase
+void Player::levelUp()
+{
+	//For now, atk and def = level
+	++m_level;
+	m_atk = m_level;
+	m_def = m_level;
+
+	if (m_level < 6) //For levels 1 - 5
+	{
+		m_max_hp += static_cast<int>((10.0 - m_level) / 100.0 * m_max_hp);
+		m_min_dmg += static_cast<int>((10.0 - m_level) / 100.0 * m_min_dmg);
+		m_max_dmg += static_cast<int>((10.0 - m_level) / 100.0 * m_max_dmg);
+	}
+	else
+	{
+		m_max_hp += static_cast<int>(5.0 / 100.0 * m_max_hp);
+		m_min_dmg += static_cast<int>(5.0 / 100.0 * m_min_dmg);
+		m_max_dmg += static_cast<int>(5.0 / 100.0 * m_max_dmg);
+	}
+}
+
+//Future use scaleStatsToLevel()
+
 //Checks if the data inside is valid or not (e.g. no negative hp values)
 //Should be passed size of Game::item_data when loading game data
 //Should be passed size of Game::items when loading saved game
@@ -42,13 +92,17 @@ bool Player::valid(int item_size)
 {
 	if (m_max_hp <= 0 || m_hp > m_max_hp)
 		return false;
-	if (m_def < 0)
+	if (m_atk < 1)
+		return false;
+	if (m_def < 1)
 		return false;
 	if (m_min_dmg < 0 || m_max_dmg < m_min_dmg)
 		return false;
 	if (m_exp < 0)
 		return false;
 	if (m_level < 0)
+		return false;
+	if (m_gold < 0)
 		return false;
 
 	if (m_inventory_item_type[1] != ItemType::PLACEHOLDER) //If not placeholder, we are loading a saved game, check validity of item type
@@ -77,7 +131,7 @@ bool Player::valid(int item_size)
 
 	for (int i{ 0 }; i < 4; ++i) //Since item type is placeholder, we are only loading game data
 	{
-		//ID is valid is either nothing(-1) or within the indexes of item_data (0 to item_data.size() - 1)
+		//ID is valid if either nothing(-1) or within the indexes of item_data (0 to item_data.size() - 1)
 		if (m_inventory_id[i] < -1 || m_inventory_id[i] >= item_size) 
 		{
 			return false;
@@ -86,7 +140,31 @@ bool Player::valid(int item_size)
 	return true;
 }
 
-void Player::setInventorySlotItem(int inventory_slot_number, int new_item_id, ItemType new_item_type) 
+bool Player::isInventoryFull() 
+{
+	for (int i{ 0 }; i < 4; ++i) 
+	{ 
+		if (m_inventory_id[i] == -1) //An inventory slot is empty
+		{
+			return false;
+		}
+	} 
+	return true; //All slots are not empty and thus full
+}
+
+int Player::getEmptyInventorySlot() //Returns the first available inventory slot (-1 if no free inventory slot)
+{
+	for (int i{ 0 }; i < 4; ++i)
+	{
+		if (m_inventory_id[i] == -1)
+		{
+			return (i + 1);
+		}
+	}
+	return -1;
+}
+
+void Player::setInventorySlotItem(int inventory_slot_number, ItemType new_item_type, int new_item_id) 
 {
 	m_inventory_id[inventory_slot_number - 1] = new_item_id;
 	m_inventory_item_type[inventory_slot_number - 1] = new_item_type;
@@ -129,7 +207,9 @@ bool Mob::valid()
 {
 	if (m_max_hp <= 0 || m_hp > m_max_hp)
 		return false;
-	if (m_def < 0)
+	if (m_def < 1)
+		return false;
+	if (m_atk < 1)
 		return false;
 	if (m_min_dmg < 0 || m_max_dmg < m_min_dmg)
 		return false;
@@ -138,6 +218,8 @@ bool Mob::valid()
 	if (m_level < 0)
 		return false;
 	if (m_run_chance < 0.0 || m_run_chance > 100.0)
+		return false;
+	if (m_gold < 0)
 		return false;
 	return true;
 }

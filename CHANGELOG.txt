@@ -1,27 +1,51 @@
-Version 0.2.0 Data Update
-26 Jan 2018
+Version 0.3.0 RPG Update
+01 Feb 2018
 --------------------------------------------------
-Description: Second major version of the game.
-This update will introduce many much needed features
-for the player to have a much better experience, most
-providing the player with important information to
-make better decisions to win the game.
+Description: Third major version of the game.
+This update will introduce many features typical of
+an RPG game, such as levels, defense values, a basic
+economy and NPCs, as well as customizable options
+
 Data:
-- Additions: comments to be able to be added to Data.dat for better readability
-- Additions: Message print when choosing an invalid option in main menu
-- Changes: Number of maximum items/entities allowed to be generated on the map is now more accurate
-(^^ Previously, maximum items + entities was equal to the size of the map, but each tile can actually
-allow up to one item as well as one entity)
-- Changes: Item type now not required for player, only ID is used
+- Additions: Items now have a new data member "value" to add (Default value of item in shop)
+- Additions: Mobs now have a new data member "gold" to add (Amount it will drop on death)
+- Changes: Item type should now be placed before the name
+
+Options:
+- Additions: New file for custom starting options like map size, position of magical potion/player, max time to complete game
+
+NPCs:
+- Additions: New file for creating NPCs in the game (Only the merchant for now)
+Notes: Merchants can have a maximum of 9 inventory slots
 
 Gameplay:
-- Additions: Mob health being displayed
-- Additions: Printing damage done to mob
-- Additions: Printing health healed by using item
-- Additions: Printing number of uses left for an item in the inventory and ground
-- Additions: Printing the current coordinates of the player
-- Additions: Printing encounter on first turn of encounter
-- Additions: Printing the previous action of the player
-- Additions: Player can swap items with an empty tile if there is an item in an inventory slot (Drop item)
-- Additions: Message telling player if run succeeded or failed
-- Additions: More detailed messages when player chooses an action that can't be done in that turn
+- Additions: Items can now be inspected to yield a description (To be expanded on in future Events update)
+- Additions: Players now have exp and levels that scale their stats
+- Additions: Attack value of attacker is compared to defence value of defender to determine effective damage
+(^^ Atk and def must be defined to be at least 1)
+- Additions: Items now have a functioning success rate (Can now fail to be used)
+- Additions: Mobs now drop gold and exp
+- Additions: There is now a merchant NPC that will buy and sell items (Basic trading)
+- Additions: Unusable item types (Can only be sold)
+- Additions: Game now tells the player what his/her roll on whether his/her use of item is successful is (Not for running)
+- Changes: UI Overhaul, with more sub-menus for each type of action as opposed to a specific number for each specific action
+- Changes: Game now prints map after defeating a mob
+- Changes: Changed text describing number of uses left for an item
+- Changes: Minor text alignment changes
+- Fixes: Typo when printing that player will constantly take damage while on same tile as a threat
+- Fixes: Undefined behaviour when choosing an item slot with an item that is not a healing item in encounter with threat
+- Fixes: Player character did not appear on screen after defeating a mob, then checking surroundings
+- Fixes: Player can try to move right or down out of the map, resulting in a crash
+- Fixes: Picking up the magical potion resulted in the game displaying as having medicine in the inventory
+- Fixes: Inputting invalid option in swap item menu, game returns to movement/inventory/etc menu without telling user
+- Fixes: Game did not print player position if player chooses to go back from swap item menu
+- Fixes: Threat can no longer spawn on the same tile as the magical potion
+
+Additional notes:
+- Initial values of player's atk and def can be changed in Data.dat but currently the levelled up values are fixed
+- If the player starts with more than 5 exp, the level will not updated until the player gains some exp
+- The current atk/def algorithm needs work, a simple one has currently been implemented as a trial
+- Position of merchant is not checked if it has a conflict with other merchants/players
+- There is a chance that if the number of entities to be generated is directly equal to that of the mapsize, and the last
+entity to be generated is a threat, and the last tile without an entity is the magical potion, game could infinite loop (unconfirmed)
+- All these will be fixed in a future update

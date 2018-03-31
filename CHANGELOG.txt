@@ -1,0 +1,67 @@
+Version 0.1.0 Base Build
+20 Jan 2018
+--------------------------------------------------
+Description: Base version of the game, first build.
+Should load customizable data to play the game with.
+Default settings with no player customization
+Note: Broken and can't be played
+
+Version 0.1.1 Major fix patch
+21 Jan 2018
+--------------------------------------------------
+Note: Broken and can't be played
+
+General:
+- Changes: ErrorLog text appearance tweaked
+- Changes: Corrected main menu incorrect spacing
+- Additions: More accurate compilation date and time display
+
+Data:
+- Changes: Program will now log that Data.dat is empty if it is empty
+- Fixes: Data loading not following specified syntax
+- Fixes: Data not loading properly after loading player
+- Fixes: Data not detecting imcomplete Data.dat
+- Fixes: Data not detecting incorrect data being streamed properly
+- Fixes: Game crashing when initializing new game when getting random empty tile coordinates
+- Fixes: Game crashing when starting new game
+- Fixes: Game crashing when displaying player details
+
+Gameplay:
+- Changes: Player details presentation
+- Changes: Player option mistakenly displaying 'b' to exit
+- Changes: Player possible options presentation
+- Changes: Map presentation
+- Fixes: Weapon items not having their uses decremented
+- Fixes: Chance of failure when running printing fault
+- Fixes: Game crashing sometimes when player moves
+
+Version 0.1.2 Critical fix patch
+24 Jan 2018
+--------------------------------------------------
+Note: First playable build
+
+General:
+- Additions: A message telling player to refer to ErrorLog.txt in event of a fatal error
+- Fixes: Game crashes when starting a new game for the second time
+
+Data:
+- Changes: Player is now code 1, and items moved to code 0
+- Changes: Data.dat now cannot be modified to allow player to start with magical potion
+- Fixes: player data not checking inventory's validity
+
+Gameplay:
+- Changes: Map is now reprinted when player swaps items
+- Changes: Player starting position is now at coordinates (0, 0), top right of map
+- Changes: Map default size is now 10 x 10
+- Fixes: Used up healing items not being cleaned up
+- Fixes: Maptiles were not being updated
+- Fixes: Details not reprinting after returning from swap item menu
+- Fixes: Player moving down when chose to move up
+- Fixes: Tiles not becoming invisible after leaving field of vision of player character
+- Fixes: Swapping items to wrong inventory slot
+- Fixes: Item still being displayed on map after being taken
+- Fixes: Mob not attacking player
+- Fixes: Weapons' uses not being decremented after each use
+- Fixes: Not being able to use inventory slots 2, 3 and 4 when not in encounter
+- Fixes: Game no longer crashes when the player encounters a threat
+- Fixes: Player is now able to start with items properly (As defined in Data.dat)

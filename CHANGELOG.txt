@@ -1,46 +1,22 @@
-Version 0.4.0 Events Update
-06 Feb 2018
+Version 0.4.1 Time Patch
+30 Mar 2018
 --------------------------------------------------
-Description: Fourth major version of the game.
-This update adds customization of event messages,
-when interacting with items/entities, and allows
-defining custom descriptions upon inspection.
-This update also features a better atk/def algorithm.
+Description: Patch that revises the main flow of the
+game. Instead of switching back and forth between
+player and the non-player's turn, now uses a time system
+that iterates through every (by default) 0.25 days, so
+mobs/threats can have a properly defined attack frequency
+and the time taken for each player's move can be adjusted
 
 Data:
-- Additions: Threats now have an atk stat
-- Changes: Player can now have a variable number of inventory slots
-- Changes: Starting Exp is now evaluated and the player levelled up accordingly
-- Fixes: Typo in comment description of min/max dmg for mobs and threats
+- Additions: Mobs and threats now have an attack frequency (in days)
 
 Options:
-- Additions: Magic potion can now be defined to have a random starting position determined by the game
-- Additions: Player can now be defined to have a random starting position determined by the game
-
-NPCs:
-- Additions: NPCs can now be defined to have a random starting position determined by the game
-
-Events:
-- Additions: Events file where specific event messages can be defined for each item/npc/mob/threat
+- Additions: Time interval between each update can be changed in Options.dat
+- Additions: First encounter reaction time (For mobs) can now be changed in Options.dat
+- Additions: Time taken for each individual action (Move, use item, check surroundings, run) can now be changed in Options.dat
 
 Gameplay:
-- Additions: Can now inspect entities, threats and NPCs
-- Additions: Mobs and threats' min dmg and max dmg, def, level details now available to be seen in-game through inspection
-- Additions: Can now inspect items in merchants' inventories in the buy menu
-- Additions: New atk/def dmg bonus calculation algorithm
-- Changes: Inventory is now listed from top down then left to right instead of left to right then top down
-- Changes: Inventory is now printed in the buy menu
-- Fixes: The atk/def mechanism did not include when mobs attack the player
-- Fixes: Typo in message displaying additional damage done due to greater attack stat
-- Fixes: No longer displays old menu in encounter with threat despite taking inputs for the new menu
-- Fixes: No longer asks if player wants to use inventory slot 1, 2, 3 or 4 but which inventory slot to use when picking up item
-- Fixes: Game does not reprint map after going use inventory/inspect menu
-- Fixes: Small typo in game over message
-- Fixes: Player could use the save option and "escape" an encounter, being on same tile but able to move and not receive damage
-
-Bugs:
-- If the end code is missed out in the data files, data loader will try to load same object as previous one loaded
-
-Additional notes: 
-- Mobs each have a "level" but it currently doesn't do anything and thats as intended for now.
-- This will be worked on in the future.
+- Changes: Swapping items now take the same amount of time as using an item (0.25days)
+- Changes: Game is now executed by running through in-game time in pre-defined (defualt 0.25days) time intervals,
+then deciding if anything is to be executed in this time

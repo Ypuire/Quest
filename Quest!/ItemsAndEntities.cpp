@@ -44,8 +44,6 @@ void Entity::takeDamage(int damage_amount)
 	}
 }
 
-
-
 //Checks if the data inside is valid or not (e.g. no negative hp values)
 bool Mob::valid()
 {
@@ -61,6 +59,8 @@ bool Mob::valid()
 		return false;
 	if (m_level < 0)
 		return false;
+	if (m_atk_frequency < 0)
+		return false;
 	if (m_run_chance < 0.0 || m_run_chance > 100.0)
 		return false;
 	if (m_gold < 0)
@@ -72,6 +72,8 @@ bool Mob::valid()
 bool Threat::valid()
 {
 	if (m_min_dmg < 0 || m_max_dmg < m_min_dmg)
+		return false;
+	if (m_atk_frequency < 0)
 		return false;
 	if (m_run_chance < 0.0 || m_run_chance > 100.0)
 		return false;

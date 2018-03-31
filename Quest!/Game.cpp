@@ -5,6 +5,10 @@
 #include <exception>
 #include "Game.h"
 
+
+#define EPSILON 0.001 //Given 0.001 since days are only counted up to 0.01 precision
+#define FLT_EQUAL(x, y) (((x - EPSILON) < y) && ((x + EPSILON) > y))
+
 //Default values to be initialized (Options are loaded from Options.dat)
 void Game::initializeDefaultValues()
 {
@@ -12,62 +16,59 @@ void Game::initializeDefaultValues()
 	Game::game_state = GameState::ONGOING;
 	Game::time_left = max_time;
 	Game::current_time = 0;
+	Game::player_next_turn_time = 0;
+	Game::computer_next_turn_time = -1;
+	std::cout << std::fixed << std::setprecision(2);
 }
 
 //Main body loop
 void Game::start()
 {
-	std::cout << std::fixed << std::setprecision(2);
-
 	while (true)
 	{
-		printMap();
+		Game::evaluateEvents();		//Check victory/loss conditions
+		Game::evaluateEncounters(); //Attacked by mob/etc, check player death
 
-		do {
+		if (FLT_EQUAL(Game::current_time, Game::player_next_turn_time)) //Execute all this only if its the player's turn (Print details and events and executes player action)
+		{
+			if (Game::need_update_map)
+			{
+				Game::printMap();
+			}
 			Game::printTimeLeft();
 			Game::printPlayerDetails(Game::player);
 			if (game_state == GameState::WON)
 			{
 				Game::event_message_handler.printMsgs();
-				printVictoryMessage();
+				Game::printVictoryMessage();
 				return;
 			}
 			if (game_state == GameState::LOST)
 			{
 				Game::event_message_handler.printMsgs();
-				printGameOverMessage();
+				Game::printGameOverMessage();
 				return;
 			}
 
-			bool input_valid;
-			Game::printPlayerPosition(Game::player);
-			Game::event_message_handler.printMsgs();
+			Game::printPlayerPosition(Game::player);	//Prints the position of the player
+			Game::event_message_handler.printMsgs();	//Prints all the event messages then clears the event message cache
 			Game::printObjectsOnTileDetails(Game::player.getXCoord(), Game::player.getYCoord());	//Print what is on the same tile at the player (Item/entity)
 			Game::printAvailablePlayerActions();	//Move, inventory, check surroundings, save, exit
-			do {
 
+			bool input_valid{ true };
+			do {	//Handle user input and decisions here (Loops while invalid user input received)
 				std::cin >> Game::user_input;
 				if (!validInput() || !Game::isPlayerActionValid())
 				{
-					if (Game::user_input == 'b' || Game::user_input == 'B')
-					{	//If here as a result of user choosing to swap item, but decided not to and went back, don't print invalid option
-						if (Game::need_update_map)
-						{
-							Game::printMap();	//Reprint Note: This portion of code is up for revision
-						}
-						Game::printTimeLeft();
-						Game::printPlayerDetails(Game::player);
-						Game::printPlayerPosition(Game::player);
-						Game::event_message_handler.printMsgs();
-						Game::printObjectsOnTileDetails(Game::player.getXCoord(), Game::player.getYCoord());	//Print objects on same tile as player (Item/entity)
-						Game::printAvailablePlayerActions();	//Move, inventory, check surroundings, save, exit
-					}
-					//Else, the message telling the player that he/she chose an invalid option and why will be printed by isPlayerActionValid
 					input_valid = false;
+					continue; //Loop
 				}
-				else 
-					input_valid = true;
 			} while (!input_valid);
+
+			if (Game::user_input == 'b' || Game::user_input == 'B') //Just came back from a sub-menu without any action
+			{
+				continue; //Go back to the start of the main loop to reprint everything (Will not repeat any mob/threat attacks, etc, just kinda inefficient (May relook in future)
+			}
 
 			Game::evaluatePlayerAction(); //Move, attack, use inventory
 			if (Game::game_state == GameState::EXITING)
@@ -77,13 +78,11 @@ void Game::start()
 			else if (Game::game_state == GameState::SAVING)
 			{
 				//Will currently never reach here
+				return;
 			}
-			else
-			{
-				Game::evaluateEvents();		//Attacked by mob/etc, update time(Non-player events)
-			}
-		} while (Game::need_update_map == false);	//Includes shop, encounter with mob
-	}
+		}	//End of code to execute on player's turn
+		Game::advanceTime(Game::time_interval);	//Advance time to evaluate events
+	}//End of main loop
 }
 
 //Clears all variables defined at the start of the game to get ready for the next time its run
@@ -110,8 +109,9 @@ void Game::loadOptions()
 	}
 
 	int player_start_xcoord, player_start_ycoord;
-	data_loader >> Game::map_xsize >> Game::map_ysize >> Game::max_time;
-	data_loader >> player_start_xcoord >> player_start_ycoord >> Game::magical_potion_xcoord >> Game::magical_potion_ycoord;
+	data_loader >> Game::map_xsize >> Game::map_ysize >> Game::max_time >> Game::time_interval >> Game::first_encounter_reaction_time
+		>> Game::time_taken_to_move >> Game::time_taken_to_use_inv >> Game::time_taken_to_check_surroundings >> Game::time_taken_to_run
+		>> player_start_xcoord >> player_start_ycoord >> Game::magical_potion_xcoord >> Game::magical_potion_ycoord;
 
 	//Expected eof() only, if fail, something was read wrongly
 	if (data_loader.fail())
@@ -139,6 +139,18 @@ void Game::loadOptions()
 	if (Game::max_time <= 0)
 	{
 		throw std::runtime_error("Options.dat: Data is defined wrongly. Max time must be at least 1 day long");
+	}
+	if (Game::time_interval > 0.25 || Game::time_interval < 0.01)
+	{
+		throw std::runtime_error("Options.dat: Data is defined wrongly. Time interval must not be greater than 0.25 or smaller than 0.01");
+	}
+	if (Game::first_encounter_reaction_time < 0)
+	{
+		throw std::runtime_error("Options.dat: Data is defined wrongly. First encounter reaction time cannot be negative");
+	}
+	if (Game::time_taken_to_move < 0 || Game::time_taken_to_use_inv < 0 || Game::time_taken_to_check_surroundings < 0 || Game::time_taken_to_run < 0)
+	{
+		throw std::runtime_error("Options.dat: Data is defined wrongly. Time taken for an action cannot be negative");
 	}
 	if (player_start_xcoord == -1 && player_start_ycoord == -1) {} //Ignore this case, this tells the item/entity generator to place the player randomly
 	else
@@ -205,7 +217,7 @@ void Game::loadData()
 	double success_rate;
 	//For loading Entity
 	int max_hp, hp, atk, def, min_dmg, max_dmg, exp, level, gold;
-	double run_chance;
+	double run_chance, attack_frequency;
 	//For loading Threat, no new unique variable needed
 
 	while (data_loader())
@@ -334,10 +346,10 @@ void Game::loadData()
 				throw std::runtime_error("Data.dat: " + data_loader.getErrorMsg());
 			}
 
-			data_loader >> max_hp >> hp >> atk >> def >> min_dmg >> max_dmg >> exp >> level >> run_chance >> gold >> number_to_place;
+			data_loader >> max_hp >> hp >> atk >> def >> min_dmg >> max_dmg >> attack_frequency >> exp >> level >> run_chance >> gold >> number_to_place;
 
 			data_loader.checkStatus(); //Throws if error
-			Mob mob(name, max_hp, hp, atk, def, min_dmg, max_dmg, exp, level, run_chance, gold, object_typeid);
+			Mob mob(name, max_hp, hp, atk, def, min_dmg, max_dmg, attack_frequency, exp, level, run_chance, gold, object_typeid);
 			if (!mob.valid()) //Validate data, if invalid, throw
 			{
 				throw std::runtime_error("Data.dat: Mob data with object_typeid " + std::to_string(object_typeid) + " is invalid. Data.dat is in a wrong format.");
@@ -364,10 +376,10 @@ void Game::loadData()
 				throw std::runtime_error("Data.dat: " + data_loader.getErrorMsg());
 			}
 
-			data_loader >> atk >> min_dmg >> max_dmg >> run_chance >> number_to_place;
+			data_loader >> atk >> min_dmg >> max_dmg >> attack_frequency >> run_chance >> number_to_place;
 
 			data_loader.checkStatus(); //Throws if error
-			Threat threat(name, atk, min_dmg, max_dmg, run_chance, object_typeid);
+			Threat threat(name, atk, min_dmg, max_dmg, attack_frequency, run_chance, object_typeid);
 			if (!threat.valid()) //Validate data, if invalid, throw
 			{
 				throw std::runtime_error("Data.dat: Threat data with object_typeid " + std::to_string(object_typeid) + " is invalid. Data.dat is in a wrong format.");
@@ -552,7 +564,9 @@ void Game::loadNPCs()
 	throw std::runtime_error("NPCs.dat: Data loader has failed, game data cannot be loaded."); //Should return from function from loop if successful
 }
 
-bool Game::coordsOutOfBounds(int xcoord, int ycoord)
+//Checks if a coordinate is outside of the boundaries of the map
+//Will not throw
+bool Game::coordsOutOfBounds(int xcoord, int ycoord) const
 {
 	if (xcoord < 0)
 		return true;
@@ -565,6 +579,8 @@ bool Game::coordsOutOfBounds(int xcoord, int ycoord)
 	return false;
 }
 
+//Verifies if the number of events loaded is correct
+//May throw std::runtime_error (Should be caught by std::exception handler)
 void Game::verifyEvents() const
 {
 	if (Game::base_item_data.size() != Game::event_list.getNumberOfObjectTypesLoaded(ObjectType::BASEITEM))
@@ -1059,7 +1075,7 @@ bool Game::isPlayerActionValid()
 		case 'i':
 		case 'I':
 			Game::inspectMenu(Game::player.m_inventory, Game::player.getXCoord(), Game::player.getYCoord()); //Menu to choose which item from inventory or tile to inspect (Get details of)
-			return false; //Not an actual action, prompt for one again
+			return true; //Return to caller, reprint everything (return to start of main loop)
 		case 's':
 		case 'S':
 			std::cout << "Sorry, this has not been implemented yet\n";
@@ -1090,7 +1106,7 @@ bool Game::isPlayerActionValid()
 		case 'i':
 		case 'I':
 			Game::inspectMenu(Game::player.m_inventory, Game::player.getXCoord(), Game::player.getYCoord()); //Menu to choose which item from inventory or tile to inspect (Get details of)
-			return false; //Not an actual action, prompt for one again
+			return true; //Return to caller, reprint everything (return to start of main loop)
 		case 's':
 		case 'S':
 			std::cout << "Sorry, this has not been implemented yet\n";
@@ -1121,7 +1137,7 @@ bool Game::isPlayerActionValid()
 		case 'i':
 		case 'I':
 			Game::inspectMenu(Game::player.m_inventory, Game::player.getXCoord(), Game::player.getYCoord()); //Menu to choose which item from inventory or tile to inspect (Get details of)
-			return false; //Not an actual action, prompt for one again
+			return true; //Return to caller, reprint everything (return to start of main loop)
 		case 's':
 		case 'S':
 			std::cout << "Sorry, this has not been implemented yet\n";
@@ -1155,11 +1171,11 @@ bool Game::isPlayerActionValid()
 		case 'i':
 		case 'I':
 			Game::inspectMenu(Game::player.m_inventory, Game::player.getXCoord(), Game::player.getYCoord()); //Menu to choose which item from inventory or tile to inspect (Get details of)
-			return false; //Not an actual action, prompt for one again
+			return true; //Return to caller, reprint everything (return to start of main loop)
 		case 't':
 		case 'T':
 			Game::talkToNPCMenu();
-			return false; //Not an actual action, prompt for one again
+			return true; //Return to caller, reprint everything (return to start of main loop)
 		case 's':
 		case 'S':
 			std::cout << "Sorry, this has not been implemented yet\n";
@@ -1239,7 +1255,7 @@ bool Game::playerMoveMenu()
 			}
 		case 'b':
 		case 'B':
-			return false; //Return to caller, will not print invalid option (Backed by caller)
+			return true; //Return to caller, reprint everything (return to start of main loop)
 		default:
 			std::cout << "Invalid option! Option is unrecognised.\n";
 			continue; //Loop this menu again
@@ -1315,7 +1331,7 @@ bool Game::useItemMenu()
 		}
 		case 'b':
 		case 'B':
-			return false; //Return to caller, will not print invalid option (Backed by caller)
+			return true; //Return to caller, reprint everything (return to start of main loop)
 		default:
 			std::cout << "Invalid option! Option is unrecognised.\n";
 			continue; //Loop this menu again
@@ -1364,7 +1380,7 @@ bool Game::swapItemMenu()
 		}
 		case 'b':
 		case 'B':
-			return false; //Return to caller, will not print invalid option (Backed by caller)
+			return true; //Return to caller, reprint everything (return to start of main loop)
 		default:
 			std::cout << "Invalid option! Option is unrecognised.\n";
 			continue; //Loop this menu again
@@ -1570,6 +1586,7 @@ void Game::printEntityDetails(Mob& mob) const
 		<< "\nDef: " << mob.getDef()
 		<< "\nMin damage: " << mob.getMinDmg()
 		<< "\nMax damage: " << mob.getMaxDmg()
+		<< "\nAttack frequency: " << mob.getAtkFrequency()
 		<< "\nExp drop: " << mob.getExp()
 		<< "\nGold drop: " << mob.getGold()
 		<< "\nRun chance from mob: " << mob.getRunChance()
@@ -1584,6 +1601,7 @@ void Game::printEntityDetails(Threat& threat) const
 		<< "\nAtk: " << threat.getAtk()
 		<< "\nMin damage: " << threat.getMinDmg()
 		<< "\nMax damage: " << threat.getMaxDmg()
+		<< "\nAttack frequency: " << threat.getAtkFrequency()
 		<< "\nRun chance from threat: " << threat.getRunChance()
 		<< "\nEnd of details.\n\n";
 }
@@ -1902,7 +1920,7 @@ void Game::evaluatePlayerAction()
 	case Action::MOVE_RIGHT:
 	case Action::MOVE_DOWN:
 	{
-		Game::advanceTime(1);
+		Game::playerPassedTime(Game::time_taken_to_move);
 		Game::playerMove(Game::player);
 		Game::evaluatePossibleEncounter(); //Handles need_update_map
 		break;
@@ -1917,7 +1935,7 @@ void Game::evaluatePlayerAction()
 	case Action::INVENTORY8:
 	case Action::INVENTORY9:
 	{
-		Game::advanceTime(0.25);
+		Game::playerPassedTime(Game::time_taken_to_use_inv);
 		//Converts INVENTORY1 to 0, INVENTORY4 to 3
 		int inventory_index = static_cast<int>(Game::player.getAction()) - static_cast<int>(Action::INVENTORY1);
 		if (Game::player.m_inventory->getItemType(inventory_index) == ItemType::HEALING)
@@ -1940,14 +1958,14 @@ void Game::evaluatePlayerAction()
 	case Action::SWAP_ITEM8:
 	case Action::SWAP_ITEM9:
 	{
-		Game::advanceTime(0.5);
+		Game::playerPassedTime(Game::time_taken_to_use_inv);
 		//Converts SWAP_ITEM1 to 0, SWAP_ITEM4 to 3
 		int inventory_index = static_cast<int>(Game::player.getAction()) - static_cast<int>(Action::SWAP_ITEM1);
 		Game::swapItems(Game::player, inventory_index);
 		break;
 	}
 	case Action::CHECK_SURROUNDINGS:
-		Game::advanceTime(3);
+		Game::playerPassedTime(Game::time_taken_to_check_surroundings);
 		Game::checkSurroundings(Game::player);
 		Game::event_message_handler.addEventMsg("You checked your surroundings carefully...");
 		Game::need_update_map = true;
@@ -1959,7 +1977,7 @@ void Game::evaluatePlayerAction()
 		break;
 	case Action::RUN:
 	{
-		advanceTime(1);
+		playerPassedTime(time_taken_to_run);
 		int xcoord, ycoord;
 		Game::player.getCoords(xcoord, ycoord);
 		int entity_id = Game::map(xcoord, ycoord).getEntityID();
@@ -2006,7 +2024,7 @@ void Game::evaluatePossibleEncounter()
 	if (entity_on_tile_type == EntityType::MOB)
 	{
 		Game::game_state = GameState::ENCOUNTER_MOB;
-		Game::first_time_in_encounter_mob = true;
+		Game::computer_next_turn_time = Game::player_next_turn_time + Game::first_encounter_reaction_time; //Bonus reaction time when encountering mob
 		Game::event_message_handler.addEventMsg("You have encountered a " + Game::mobs[entity_id].getName() + "! Prepare yourself!");
 		//encounter msg
 		Game::need_update_map = false;
@@ -2014,6 +2032,7 @@ void Game::evaluatePossibleEncounter()
 	else if (entity_on_tile_type == EntityType::THREAT)
 	{
 		Game::game_state = GameState::ENCOUNTER_THREAT;
+		Game::computer_next_turn_time = Game::player_next_turn_time; //Threat should immediately attack the player
 		Game::event_message_handler.addEventMsg("You have encountered a " + Game::threat_data[entity_id].getName() + "! Run!");
 		Game::need_update_map = false;
 	}
@@ -2321,8 +2340,8 @@ void Game::checkSurroundings(const Entity& entity)
 
 }
 
-//Checks if victory/loss conditions met, and as well as any non-player related events to be carried out
-//E.g. Mob movement (In the future), mobs attacking/threat damage, etc
+//Checks if victory condition of finding potion met, and if loss condition of running out of time met
+//In future, evaluates natural events unrelated to player and entities
 void Game::evaluateEvents()
 {
 	if (noTimeLeft())
@@ -2336,10 +2355,14 @@ void Game::evaluateEvents()
 		Game::game_state = GameState::WON;
 		return;
 	}
-	//else
+}
+
+//Checks if it is time for mobs/threats to attack(/move in the future) and check for loss condition of player death
+void Game::evaluateEncounters()
+{
 	if (Game::game_state == GameState::ENCOUNTER_MOB)
 	{
-		if (!Game::first_time_in_encounter_mob) //Note: If it is actually the first time, we want to do nothing as the mob should not attack yet
+		while (Game::computer_next_turn_time <= Game::current_time) //Repeat until its next timing to attack has not passed yet
 		{
 			int entity_id = Game::map(Game::player.getXCoord(), Game::player.getYCoord()).getEntityID();
 			int expected_damage = getRandomInt(Game::mobs[entity_id].getMinDmg(), Game::mobs[entity_id].getMaxDmg());
@@ -2357,31 +2380,47 @@ void Game::evaluateEvents()
 			{
 				Game::event_message_handler.addEventMsg(Game::mobs[entity_id].getName() + "\'s greater attack allowed it to deal you " + std::to_string(damage_discrepency) + " more points of damage.");
 			}
+			Game::computer_next_turn_time += Game::mobs[entity_id].getAtkFrequency();
 		}
-		Game::first_time_in_encounter_mob = false;
 	}
 	else if (Game::game_state == GameState::ENCOUNTER_THREAT) //Note: Threat will always attack
 	{
-		int entity_id = Game::map(Game::player.getXCoord(), Game::player.getYCoord()).getEntityID();
-		int expected_damage = getRandomInt(Game::threat_data[entity_id].getMinDmg(), Game::threat_data[entity_id].getMaxDmg());
-		int actual_damage = Game::evaluateActualDamage(expected_damage, Game::threat_data[entity_id].getAtk(), player.getDef());
-		int damage_discrepency = actual_damage - expected_damage;
+		while (Game::computer_next_turn_time <= Game::current_time) //Repeat until its next timing to attack has not passed yet
+		{
+			int entity_id = Game::map(Game::player.getXCoord(), Game::player.getYCoord()).getEntityID();
+			int expected_damage = getRandomInt(Game::threat_data[entity_id].getMinDmg(), Game::threat_data[entity_id].getMaxDmg());
+			int actual_damage = Game::evaluateActualDamage(expected_damage, Game::threat_data[entity_id].getAtk(), player.getDef());
+			int damage_discrepency = actual_damage - expected_damage;
 
-		Game::player.takeDamage(actual_damage);
-		Game::event_message_handler.addEventMsg(Game::event_list.getMessage(ObjectType::THREAT, Game::threat_data[entity_id].getObjectTypeID(), ThreatEvent::ATTACK));
-		Game::event_message_handler.addEventMsg("You take " + std::to_string(actual_damage) + " points of damage!");
-		if (damage_discrepency < 0) //Took less damage than expected
-		{
-			Game::event_message_handler.addEventMsg("Your greater defense allowed you to block " + std::to_string(-damage_discrepency) + " points of damage.");
-		}
-		else if (damage_discrepency > 0)
-		{
-			Game::event_message_handler.addEventMsg(Game::threat_data[entity_id].getName() + "\'s greater attack allowed it to deal you " + std::to_string(damage_discrepency) + " more points of damage.");
+			Game::player.takeDamage(actual_damage);
+			Game::event_message_handler.addEventMsg(Game::event_list.getMessage(ObjectType::THREAT, Game::threat_data[entity_id].getObjectTypeID(), ThreatEvent::ATTACK));
+			Game::event_message_handler.addEventMsg("You take " + std::to_string(actual_damage) + " points of damage!");
+			if (damage_discrepency < 0) //Took less damage than expected
+			{
+				Game::event_message_handler.addEventMsg("Your greater defense allowed you to block " + std::to_string(-damage_discrepency) + " points of damage.");
+			}
+			else if (damage_discrepency > 0)
+			{
+				Game::event_message_handler.addEventMsg(Game::threat_data[entity_id].getName() + "\'s greater attack allowed it to deal you " + std::to_string(damage_discrepency) + " more points of damage.");
+			}
+			Game::computer_next_turn_time += Game::threat_data[entity_id].getAtkFrequency();
 		}
 	}
 
 	if (playerDied())
+	{
 		Game::game_state = GameState::LOST;
+	}
+}
+
+void Game::playerPassedTime(double time_passed)
+{
+	Game::player_next_turn_time = Game::current_time + time_passed;
+
+	int whole_time_to_pass = static_cast<int>(time_passed); //Hold the whole number part of time_to_pass
+	int decimal_time_to_pass = static_cast<int>(time_passed * 100) - whole_time_to_pass * 100; //Hold the decimal part of time_to_pass
+
+	Game::event_message_handler.addEventMsg(std::to_string(whole_time_to_pass) + '.' + std::to_string(decimal_time_to_pass) + " Days have passed...");
 }
 
 //Adjusts time_left and the current_time accordingly
@@ -2394,10 +2433,6 @@ void Game::advanceTime(double time_to_pass)
 	{
 		Game::time_left = 0.0;
 	}
-	int whole_time_to_pass = static_cast<int>(time_to_pass); //Hold the whole number part of time_to_pass
-	int decimal_time_to_pass = static_cast<int>(time_to_pass * 100) - whole_time_to_pass * 100; //Hold the decimal part of time_to_pass
-
-	Game::event_message_handler.addEventMsg(std::to_string(whole_time_to_pass) + '.' + std::to_string(decimal_time_to_pass) + " Days have passed...");
 }
 
 //Checks if there is no time left to find the magical potion

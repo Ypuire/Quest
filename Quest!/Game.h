@@ -45,10 +45,10 @@ private:
 
 	char user_input;
 	bool need_update_map;
-	bool first_time_in_encounter_mob;
 	GameState game_state;
 
-	double time_left, max_time, current_time;
+	double time_interval, time_left, max_time, current_time, player_next_turn_time, computer_next_turn_time, first_encounter_reaction_time;
+	double time_taken_to_move, time_taken_to_use_inv, time_taken_to_check_surroundings, time_taken_to_run;
 
 	EventMsgHandler event_message_handler; //Holds messages from previous events (Should be cleared after being printed)
 
@@ -56,7 +56,7 @@ private:
 	int getName(DataLoader& data_loader, std::string& name);
 	void loadNPCs();
 	void loadOptions();					//Loads default options. Throws if error loading/validating default options values
-	bool coordsOutOfBounds(int xcoord, int ycoord);
+	bool coordsOutOfBounds(int xcoord, int ycoord) const;
 	void verifyEvents() const;
 	void placeItemsAndEntities();		//Throws if not enough tiles to place items/entities
 
@@ -110,6 +110,8 @@ private:
 
 	//Non-player event functions
 	void evaluateEvents();
+	void evaluateEncounters();
+	void playerPassedTime(double time_passed);
 	void advanceTime(double time_to_pass);
 	bool noTimeLeft() const;
 	bool playerDied() const;

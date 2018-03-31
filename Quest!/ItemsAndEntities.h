@@ -130,7 +130,7 @@ public:
 
 	Entity(EntityType entity_type, const std::string& name, int max_hp, int hp,int atk, int def, int min_dmg, int max_dmg, int exp, int level,
 		bool is_dead, int gold, int object_typeid)
-		: m_entity_type{ entity_type }, m_name{ name }, m_max_hp{ max_hp }, m_hp{ hp }, m_atk{ atk }, m_def{ def }, m_min_dmg{ min_dmg }, m_max_dmg{ max_dmg },
+		: m_entity_type{ entity_type }, m_name{ name }, m_max_hp{ max_hp }, m_hp{ hp }, m_atk{ atk }, m_def{ def }, m_min_dmg{ min_dmg }, m_max_dmg{ max_dmg }, 
 		m_exp{ exp }, m_level{ level }, m_is_dead{ is_dead }, m_gold{ gold }, m_object_typeid{ object_typeid }
 	{}
 
@@ -164,16 +164,20 @@ public:
 class Mob final : public Entity
 {
 private:
+
+	double m_atk_frequency;
 	double m_run_chance;
 	//Level not implemented
 public:
-	Mob(const std::string& name, int max_hp, int hp, int atk, int def, int min_dmg, int max_dmg, int exp, int level,
+	Mob(const std::string& name, int max_hp, int hp, int atk, int def, int min_dmg, int max_dmg, double atk_frequency, int exp, int level,
 		double run_chance, int gold, int object_typeid, bool is_dead = false)
-		:Entity(EntityType::MOB, name, max_hp, hp, atk, def, min_dmg, max_dmg, exp, level, is_dead, gold, object_typeid), m_run_chance{ run_chance }
+		:Entity(EntityType::MOB, name, max_hp, hp, atk, def, min_dmg, max_dmg, exp, level, is_dead, gold, object_typeid), 
+		m_atk_frequency{ atk_frequency }, m_run_chance{ run_chance }
 	{}
 
 	bool valid();
 
+	double getAtkFrequency() const { return m_atk_frequency; }
 	double getRunChance() const { return m_run_chance; }
 };
 
@@ -186,13 +190,13 @@ private:
 	int m_min_dmg;
 	int m_max_dmg;
 
-	double m_run_chance;
+	double m_atk_frequency, m_run_chance;
 
 	int m_object_typeid;
 
 public:
-	Threat(const std::string& name, int atk, int min_dmg, int max_dmg, double run_chance, int object_typeid)
-		: m_name{ name }, m_atk{ atk }, m_min_dmg{ min_dmg }, m_max_dmg{ max_dmg }, m_run_chance{ run_chance }, m_object_typeid{ object_typeid }
+	Threat(const std::string& name, int atk, int min_dmg, int max_dmg, double atk_frequency, double run_chance, int object_typeid)
+		: m_name{ name }, m_atk{ atk }, m_min_dmg{ min_dmg }, m_max_dmg{ max_dmg }, m_atk_frequency{ atk_frequency }, m_run_chance{ run_chance }, m_object_typeid{ object_typeid }
 	{}
 
 	bool valid();
@@ -201,6 +205,7 @@ public:
 	int getAtk() const { return m_atk; }
 	int getMinDmg() const { return m_min_dmg; }
 	int getMaxDmg() const { return m_max_dmg; }
+	double getAtkFrequency() const{ return m_atk_frequency; }
 	double getRunChance() const { return m_run_chance; }
 	int getObjectTypeID() const { return m_object_typeid; }
 };

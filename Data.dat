@@ -92,6 +92,7 @@ within the slashes/
 //Starting Defense value (At least 1)
 //Min damage amount
 //Max damage amount
+//Attack Interval
 //Starting EXP (At least 0)
 //Starting level (At least 1)
 //Player's run chance from this mob (From 0 to 100 up to 5 dp)
@@ -106,6 +107,7 @@ within the slashes/
 /Def/ 2
 /Min damage/ 12
 /Max damage/ 20
+/Attack interval/ 1.00
 /EXP/ 5
 /Level/ 1
 /Run chance/ 80.0
@@ -118,6 +120,7 @@ within the slashes/
 //Attack value
 //Min damage amount
 //Max damage amount
+//Attack interval
 //Player's run chance from this threat (From 0 to 100 up to 5 dp)
 //Number of this threat to spawn on the map
 
@@ -126,6 +129,7 @@ within the slashes/
 /Atk/ 3
 /Min damage/ 10
 /Max damage/ 10
+/Attack interval/ 0.50
 /Run chance/ 60.0
 /Number to spawn on map/ 10
 

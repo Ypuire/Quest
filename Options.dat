@@ -1,0 +1,42 @@
+//Comments:
+//Double slashes will comment out everything until the start of next line
+/Double slashes with at least one character between then ignore everything
+within the slashes/
+
+//Options.dat
+//
+//Default options for the game can be changed here
+//Set up map size, the time limit, and the player and magical potion's starting positions
+
+//Map size
+/Horizontal size/ 10
+/Vertical size/ 10
+
+
+//Maximum time (In whole days) that can be taken to complete the game
+//Game update interval (In whole days) The number of days between each frame in the game 
+//(Recommended: 0.25 or a factor of time taken for an action, but 0.01 or greater)
+//First encounter reaction time is the additional time before a mob attacks upon encounter 
+//(Recommended: 0.25 or equal time to use item)
+//Time taken for the player to move to an adjacent tile
+//Time taken to use an item in an inventory slot
+//Time taken to check the surrounding tiles of the player
+//Time taken to attempt to run away from a mob/threat
+
+/Max time/ 100
+/Game update interval/ 0.25
+/First encounter reaction time/ 0.25
+/Time taken to move/ 1.00
+/Time taken to use inventory/ 0.25
+/Time taken to check surroundings/ 3.00
+/Time taken to run/ 1.25
+
+
+//Player starting position
+/X coordinate/ 0
+/Y coordinate/ 0
+
+
+//Magical potion starting position
+/X coordinate/ 9
+/Y coordinate/ 9

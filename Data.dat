@@ -61,11 +61,10 @@ within the slashes/
 //Starting Defense value (At least 1)
 //Starting EXP (At least 0)
 //Starting level (At least 1)
-//Starting inventory slot 1 item ID (-1 for nothing, 0 for first item defined above, item_typeid)
-//Starting inventory slot 2 item ID (-1 for nothing, 0 for first item defined above, item_typeid)
-//Starting inventory slot 3 item ID (-1 for nothing, 0 for first item defined above, item_typeid)
-//Starting inventory slot 4 item ID (-1 for nothing, 0 for first item defined above, item_typeid)
-//Starting gold
+//Starting gold (At least 0)
+//Number of inventory slots
+//Starting inventory slot 1 item ID (-1 for nothing, 0 for first baseitem/item defined above, item_typeid)
+//Other inventory slot item IDs here...
 
 /Player code/ 1
 /Name of Player/ "Player"
@@ -75,11 +74,14 @@ within the slashes/
 /Def/ 1
 /EXP/ 0
 /Level/ 1
-/Inv slot 1 item ID/ -1
-/Inv slot 1 item ID/ 2
-/Inv slot 1 item ID/ 0
-/Inv slot 1 item ID/ 1
 /Gold/ 30
+/Inventory size/ 6
+/Inv slot 1 item ID/ 1
+/Inv slot 2 item ID/ 1
+/Inv slot 3 item ID/ 2
+/Inv slot 4 item ID/ 2
+/Inv slot 5 item ID/ 0
+/Inv slot 6 item ID/ -1
 
 //Syntax for Mobs:
 //Code 2
@@ -88,8 +90,8 @@ within the slashes/
 //Starting HP
 //Starting Attack value
 //Starting Defense value (At least 1)
-//Min heal/damage amount
-//Max heal/damage amount
+//Min damage amount
+//Max damage amount
 //Starting EXP (At least 0)
 //Starting level (At least 1)
 //Player's run chance from this mob (From 0 to 100 up to 5 dp)
@@ -101,7 +103,7 @@ within the slashes/
 /Max HP/ 50
 /HP/ 50
 /Atk/ 1
-/Def/ 1
+/Def/ 2
 /Min damage/ 12
 /Max damage/ 20
 /EXP/ 5
@@ -113,13 +115,15 @@ within the slashes/
 //Syntax for Threats:
 //Code 3
 //Name of threat within double quotes
-//Min heal/damage amount
-//Max heal/damage amount
+//Attack value
+//Min damage amount
+//Max damage amount
 //Player's run chance from this threat (From 0 to 100 up to 5 dp)
 //Number of this threat to spawn on the map
 
 /Threat code/ 3
 /Name of Threat/ "Threat"
+/Atk/ 3
 /Min damage/ 10
 /Max damage/ 10
 /Run chance/ 60.0

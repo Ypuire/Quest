@@ -1,6 +1,12 @@
 #include "DataLoader.h"
 
-void DataLoader::open(std::string& filename)
+void DataLoader::open(const char* filename)
+{
+	m_filereader.open(filename);
+	m_filename = filename;
+}
+
+void DataLoader::open(const std::string& filename)
 {
 	m_filereader.open(filename);
 	m_filename = filename;
@@ -78,4 +84,25 @@ int DataLoader::getWithinQuotes(std::string& string)
 	}
 	m_filereader.get(); //Discard the closing double quotation mark
 	return 0;
+}
+
+void DataLoader::handleNewlines(std::string& string) const
+{
+	std::string::size_type pos = 0;
+	while ((pos = string.find("\\n")) != std::string::npos)
+	{
+		string.replace(pos, 2, "\n");
+	}
+}
+
+void DataLoader::checkStatus() const
+{
+	if (m_filereader.eof())
+	{
+		throw std::runtime_error(m_filename + ": Data loader unexpectedly reached end of file. File is incomplete/Syntax is wrong.");
+	}
+	if (m_filereader.fail())
+	{
+		throw std::runtime_error(m_filename + ": Data loader encountered unexpected input. Data is defined wrongly/Syntax is wrong.");
+	}
 }

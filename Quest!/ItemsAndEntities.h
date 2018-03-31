@@ -2,9 +2,10 @@
 
 #include <string>
 #include "MiscFunctions.h"
-#include "Events.h"
 
-enum class ItemType
+class Inventory;
+
+enum class ItemType : int
 {
 	PLACEHOLDER = -2,
 	NOTHING = -1,
@@ -14,13 +15,23 @@ enum class ItemType
 	MAGICALPOTION
 };
 
-enum class EntityType
+enum class EntityType : int
 {
 	NOTHING = -1,
 	PLAYER,
 	MOB,
 	THREAT,
 	MERCHANT,
+};
+
+enum class ObjectType : int //Collection of objects (Items/entities) with event messages tied to them
+{
+	BASEITEM = 0,
+	ITEM,
+	MOB,
+	THREAT,
+	MERCHANT,
+	NUMBER_OF_OBJECTS
 };
 
 class BaseItem
@@ -34,9 +45,11 @@ protected:
 	int m_xcoord; //So far items havent had to have their coordinates used though, since all maptiles hold itemtype and their ids
 	int m_ycoord;
 
+	int m_object_typeid;
+
 public:
-	BaseItem(ItemType item_type, const std::string& name, int value)
-		: m_item_type{ item_type }, m_name{ name }, m_value{ value }
+	BaseItem(ItemType item_type, const std::string& name, int value, int object_typeid)
+		: m_item_type{ item_type }, m_name{ name }, m_value{ value }, m_object_typeid{ object_typeid }
 	{}
 
 	bool valid();
@@ -47,6 +60,7 @@ public:
 	int getYCoord() const { return m_ycoord; }
 	int getCoords(int& xcoord, int& ycoord) const { xcoord = m_xcoord; ycoord = m_ycoord; }
 	int getValue() const { return m_value; }
+	int getObjectTypeID() const { return m_object_typeid; }
 
 	void setXCoord(int new_xcoord) { m_xcoord = new_xcoord; }
 	void setYCoord(int new_ycoord) { m_ycoord = new_ycoord; }
@@ -69,8 +83,8 @@ private:
 
 public:
 
-	Item(ItemType item_type, const std::string& name, int min_hp_change, int max_hp_change, int uses, double success_rate, int value)
-		: BaseItem(item_type, name, value), m_min_hp_change{ min_hp_change }, m_max_hp_change{ max_hp_change }, m_uses{ uses },
+	Item(ItemType item_type, const std::string& name, int min_hp_change, int max_hp_change, int uses, double success_rate, int value, int object_typeid)
+		: BaseItem(item_type, name, value, object_typeid), m_min_hp_change{ min_hp_change }, m_max_hp_change{ max_hp_change }, m_uses{ uses }, 
 		m_success_rate{ success_rate }
 	{}
 
@@ -112,6 +126,8 @@ protected:
 
 public:
 
+	Entity() {}
+
 	Entity(EntityType entity_type, const std::string& name, int max_hp, int hp,int atk, int def, int min_dmg, int max_dmg, int exp, int level,
 		bool is_dead, int gold, int object_typeid)
 		: m_entity_type{ entity_type }, m_name{ name }, m_max_hp{ max_hp }, m_hp{ hp }, m_atk{ atk }, m_def{ def }, m_min_dmg{ min_dmg }, m_max_dmg{ max_dmg },
@@ -134,6 +150,7 @@ public:
 	int getXCoord() const { return m_xcoord; }
 	int getYCoord() const { return m_ycoord; }
 	void getCoords(int& xcoord, int& ycoord) const { xcoord = m_xcoord; ycoord = m_ycoord; }
+	int getObjectTypeID() const { return m_object_typeid; }
 
 	void setXCoord(int new_xcoord) { m_xcoord = new_xcoord; }
 	void setYCoord(int new_ycoord) { m_ycoord = new_ycoord; }
@@ -165,58 +182,27 @@ class Threat final
 private:
 	std::string m_name;
 
+	int m_atk;
 	int m_min_dmg;
 	int m_max_dmg;
 
 	double m_run_chance;
 
+	int m_object_typeid;
+
 public:
-	Threat(const std::string& name, int min_dmg, int max_dmg, double run_chance)
-		: m_name{ name }, m_min_dmg{ min_dmg }, m_max_dmg{ max_dmg }, m_run_chance{ run_chance }
+	Threat(const std::string& name, int atk, int min_dmg, int max_dmg, double run_chance, int object_typeid)
+		: m_name{ name }, m_atk{ atk }, m_min_dmg{ min_dmg }, m_max_dmg{ max_dmg }, m_run_chance{ run_chance }, m_object_typeid{ object_typeid }
 	{}
 
 	bool valid();
 
 	const std::string& getName() const { return m_name; }
+	int getAtk() const { return m_atk; }
 	int getMinDmg() const { return m_min_dmg; }
 	int getMaxDmg() const { return m_max_dmg; }
 	double getRunChance() const { return m_run_chance; }
+	int getObjectTypeID() const { return m_object_typeid; }
 };
 
-class Player final : public Entity
-{
-private:
-	ItemType m_inventory_item_type[4];
-	int m_inventory_id[4];
-	//Add equipped slots in the future
 
-	Action m_action;
-
-public:
-	Player(const std::string& name, int max_hp, int hp, int atk, int def, int exp, int level, 
-		int inventory1_id, int inventory2_id, int inventory3_id, int inventory4_id, int gold, int object_typeid = 0, bool is_dead = false,
-		ItemType inventory1_item_type = ItemType::PLACEHOLDER, ItemType inventory2_item_type = ItemType::PLACEHOLDER,
-		ItemType inventory3_item_type = ItemType::PLACEHOLDER, ItemType inventory4_item_type = ItemType::PLACEHOLDER)
-		: Entity(EntityType::PLAYER, name, max_hp, hp, atk, def, 0, 0, exp, level, is_dead, gold, object_typeid), //Initially 0 min dmg and 0 max dmg, only one type of player
-		m_inventory_item_type{ inventory1_item_type ,inventory2_item_type ,inventory3_item_type ,inventory4_item_type },
-		m_inventory_id{ inventory1_id ,inventory2_id, inventory3_id, inventory4_id }
-	{
-		//Scale level
-	}
-
-	bool valid(int item_size);
-
-	bool isInventoryFull();
-	int getInventorySlotItemID(int inventory_slot_number) const { return m_inventory_id[inventory_slot_number - 1]; } //Insert inventory slot number, not index
-	ItemType getInventorySlotItemType(int inventory_slot_number) const { return m_inventory_item_type[inventory_slot_number - 1]; }
-	int getEmptyInventorySlot();
-	Action getAction() const { return m_action; }
-
-	void setAction(Action action) { m_action = action; }
-	void setInventorySlotItem(int inventory_slot_number, ItemType new_item_type, int new_item_id);
-	bool runFrom(Mob& mob);
-	bool runFrom(Threat& threat);
-	void gainExp(int exp_to_add);
-	void levelUp();
-
-};

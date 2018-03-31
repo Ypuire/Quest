@@ -12,6 +12,10 @@ class DataLoader
 
 public:
 
+	DataLoader(const char* filename)
+		: m_filename{ filename }, m_filereader{ filename }
+	{}
+
 	DataLoader(const std::string& filename)
 		: m_filename{ filename }, m_filereader{ filename }
 	{}
@@ -23,7 +27,8 @@ public:
 		m_filereader.close();
 	}
 
-	void open(std::string& filename);
+	void open(const char* filename);
+	void open(const std::string& filename);
 	bool is_open() const { return m_filereader.is_open(); }
 	void close(){m_filereader.close();}
 
@@ -50,6 +55,18 @@ public:
 	//Returns 0 on success, -1 on failure
 	//Reasons for failure: Reached eof/next character after ignoring whitespace and comments is not double quotation mark
 	int getWithinQuotes(std::string& string);
+
+	//Gets a line of characters and sets the string passed in to be equal to it
+	void getLine(std::string& string) { std::getline(m_filereader, string); }
+	void ignore(std::streamsize count, int delim) { m_filereader.ignore(count, delim); }
+
+	//When "\n" is read from a file, it is read as two characters, '\\' and 'n'
+	//This function removes \\n from a string and replaces it with \n so that newlines can be streamed properly
+	void handleNewlines(std::string& string) const;
+
+	//Throws if the filereader failed or is at eof
+	//Note: This function is designed to specifically throw, use only if you are sure that you can't continue if filereader fails or eof
+	void checkStatus() const;
 
 	template <typename T>
 	friend DataLoader& operator>>(DataLoader& data_loader, T& storage_variable)

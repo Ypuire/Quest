@@ -1,75 +1,46 @@
-Version 0.3.0 RPG Update
-01 Feb 2018
+Version 0.4.0 Events Update
+06 Feb 2018
 --------------------------------------------------
-Description: Third major version of the game.
-This update will introduce many features typical of
-an RPG game, such as levels, defense values, a basic
-economy and NPCs, as well as customizable options
+Description: Fourth major version of the game.
+This update adds customization of event messages,
+when interacting with items/entities, and allows
+defining custom descriptions upon inspection.
+This update also features a better atk/def algorithm.
 
 Data:
-- Additions: Items now have a new data member "value" to add (Default value of item in shop)
-- Additions: Mobs now have a new data member "gold" to add (Amount it will drop on death)
-- Changes: Item type should now be placed before the name
+- Additions: Threats now have an atk stat
+- Changes: Player can now have a variable number of inventory slots
+- Changes: Starting Exp is now evaluated and the player levelled up accordingly
+- Fixes: Typo in comment description of min/max dmg for mobs and threats
 
 Options:
-- Additions: New file for custom starting options like map size, position of magical potion/player, max time to complete game
+- Additions: Magic potion can now be defined to have a random starting position determined by the game
+- Additions: Player can now be defined to have a random starting position determined by the game
 
 NPCs:
-- Additions: New file for creating NPCs in the game (Only the merchant for now)
-Notes: Merchants can have a maximum of 9 inventory slots
+- Additions: NPCs can now be defined to have a random starting position determined by the game
+
+Events:
+- Additions: Events file where specific event messages can be defined for each item/npc/mob/threat
 
 Gameplay:
-- Additions: Items can now be inspected to yield a description (To be expanded on in future Events update)
-- Additions: Players now have exp and levels that scale their stats
-- Additions: Attack value of attacker is compared to defence value of defender to determine effective damage
-(^^ Atk and def must be defined to be at least 1)
-- Additions: Items now have a functioning success rate (Can now fail to be used)
-- Additions: Mobs now drop gold and exp
-- Additions: There is now a merchant NPC that will buy and sell items (Basic trading)
-- Additions: Unusable item types (Can only be sold)
-- Additions: Game now tells the player what his/her roll on whether his/her use of item is successful is (Not for running)
-- Changes: UI Overhaul, with more sub-menus for each type of action as opposed to a specific number for each specific action
-- Changes: Game now prints map after defeating a mob
-- Changes: Changed text describing number of uses left for an item
-- Changes: Minor text alignment changes
-- Fixes: Typo when printing that player will constantly take damage while on same tile as a threat
-- Fixes: Undefined behaviour when choosing an item slot with an item that is not a healing item in encounter with threat
-- Fixes: Player character did not appear on screen after defeating a mob, then checking surroundings
-- Fixes: Player can try to move right or down out of the map, resulting in a crash
-- Fixes: Picking up the magical potion resulted in the game displaying as having medicine in the inventory
-- Fixes: Inputting invalid option in swap item menu, game returns to movement/inventory/etc menu without telling user
-- Fixes: Game did not print player position if player chooses to go back from swap item menu
-- Fixes: Threat can no longer spawn on the same tile as the magical potion
+- Additions: Can now inspect entities, threats and NPCs
+- Additions: Mobs and threats' min dmg and max dmg, def, level details now available to be seen in-game through inspection
+- Additions: Can now inspect items in merchants' inventories in the buy menu
+- Additions: New atk/def dmg bonus calculation algorithm
+- Changes: Inventory is now listed from top down then left to right instead of left to right then top down
+- Changes: Inventory is now printed in the buy menu
+- Fixes: The atk/def mechanism did not include when mobs attack the player
+- Fixes: Typo in message displaying additional damage done due to greater attack stat
+- Fixes: No longer displays old menu in encounter with threat despite taking inputs for the new menu
+- Fixes: No longer asks if player wants to use inventory slot 1, 2, 3 or 4 but which inventory slot to use when picking up item
+- Fixes: Game does not reprint map after going use inventory/inspect menu
+- Fixes: Small typo in game over message
+- Fixes: Player could use the save option and "escape" an encounter, being on same tile but able to move and not receive damage
 
-Additional notes:
-- Initial values of player's atk and def can be changed in Data.dat but currently the levelled up values are fixed
-- If the player starts with more than 5 exp, the level will not updated until the player gains some exp
-- The current atk/def algorithm needs work, a simple one has currently been implemented as a trial
-- Position of merchant is not checked if it has a conflict with other merchants/players
-- There is a chance that if the number of entities to be generated is directly equal to that of the mapsize, and the last
-entity to be generated is a threat, and the last tile without an entity is the magical potion, game could infinite loop (unconfirmed)
-- All these will be fixed in a future update
+Bugs:
+- If the end code is missed out in the data files, data loader will try to load same object as previous one loaded
 
-Version 0.3.1 Code Patch
-02 Feb 2018
---------------------------------------------------
-Description: Small patch with a few minor fixes,
-mostly not intended to add or change features,
-focuses on rebuilding some parts of the game with
-revised source code
-
-Data:
-- Fixes: Will not infinite loop if number of entities to be generated equal to mapsize
-
-NPCs:
-- Fixes: Items generated in inventories were mistakenly added to the check if there were too many items to generate for mapsize
-- Fixes: Conflicts in coordinates of NPCs will now be flagged up
-
-Gameplay:
-- Changes: Some messages such as printing what objects are on the same tile as the player are changed
-- Changes: Game now prints if there is nothing on the tile
-- Changes: Game now prints time passed before any other events
-- Changes: Game now prints more specific event messages when picking up/swapping/dropping items
-- Changes: Game used to display only how much a healing item would have healed, not actually heal (If player at/near max health)
-- Fixes: Game message says that there is no item in that inventory slot if user inspects a tile with nothing on it
-- Fixes: Game did not reprint map after using item despite not being in encounter
+Additional notes: 
+- Mobs each have a "level" but it currently doesn't do anything and thats as intended for now.
+- This will be worked on in the future.

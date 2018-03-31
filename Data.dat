@@ -1,17 +1,100 @@
-0 "Medicine"
-0 10 20 1 80.0 10
+//Comments:
+//Double slashes will comment out everything until the start of next line
+/Double slashes with at least one character between then ignore everything
+within the slashes/
 
-0 "Weapon"
-1 40 50 1 100.0 20
+//Syntax for items:
+//Code 0
+//Name of item within double quotes
+//Item type (0 for healing items, 1 for weapons)
+//Min heal/damage amount
+//Max heal/damage amount
+//Number of uses
+//Success rate of the item
+//Number of this item to spawn on the map
 
-1 "Player"
-100 100 0 0 1
--1 -1 0 0 0 1 -1 -1
+/Item code/ 0
+/Name of Item/ "Medicine"
+/Item type/ 0
+/Minimum heal or damage/ 20
+/Maximum heal or damage/ 35
+/Number of uses/ 1
+/Success rate/ 80.0
+/Number to spawn on map/ 20
 
-2 "Mob"
-75 75 0 10 10 0 1 60.0 20
+/Item code/ 0
+/Name of Item/ "Weapon"
+/Item type/ 1
+/Minimum heal or damage/ 40
+/Maximum heal or damage/ 50
+/Number of uses/ 1
+/Success rate/ 100.0
+/Number to spawn on map/ 30
 
-3 "Threat"
-10 20 80.0 20
+//Syntax for Player:
+//Code 1
+//Name of player within double quotes
+//Max HP
+//Starting HP
+//Starting Defense value (Not implemented)
+//Starting EXP (Not implemented)
+//Starting level (Not implemented)
+//Starting inventory slot 1 item ID (-1 for nothing, 0 for first item defined above)
+//Starting inventory slot 2 item ID (-1 for nothing, 0 for first item defined above)
+//Starting inventory slot 3 item ID (-1 for nothing, 0 for first item defined above)
+//Starting inventory slot 4 item ID (-1 for nothing, 0 for first item defined above)
 
-4
+/Player code/ 1
+/Name of Player/ "Player"
+/Max HP/ 100
+/HP/ 100
+/Def/ 0
+/EXP/ 0
+/Level/ 1
+/Inv slot 1 item ID/ -1
+/Inv slot 1 item ID/ -1
+/Inv slot 1 item ID/ 0
+/Inv slot 1 item ID/ 1
+
+//Syntax for Mobs:
+//Code 2
+//Name of mob within double quotes
+//Max HP
+//Starting HP
+//Starting Defense value (Not implemented)
+//Min heal/damage amount
+//Max heal/damage amount
+//Starting EXP (Not implemented)
+//Starting level (Not implemented)
+//Player's run chance from this mob (From 0 to 100 up to 5 dp)
+//Number of this mob to spawn on the map
+
+/Mob code/ 2
+/Name of Mob/ "Mob"
+/Max HP/ 100
+/HP/ 100
+/Def/ 0
+/Min damage/ 12
+/Max damage/ 20
+/EXP/ 0
+/Level/ 1
+/Run chance/ 80.0
+/Number to spawn on map/ 20
+
+//Syntax for Threats:
+//Code 3
+//Name of threat within double quotes
+//Min heal/damage amount
+//Max heal/damage amount
+//Player's run chance from this threat (From 0 to 100 up to 5 dp)
+//Number of this threat to spawn on the map
+
+/Threat code/ 3
+/Name of Threat/ "Threat"
+/Min damage/ 10
+/Max damage/ 10
+/Run chance/ 60.0
+/Number to spawn on map/ 10
+
+//End of Data file
+/End code/ 4

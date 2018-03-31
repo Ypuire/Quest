@@ -36,7 +36,9 @@ void Entity::takeDamage(int damage_amount)
 }
 
 //Checks if the data inside is valid or not (e.g. no negative hp values)
-bool Player::valid(int item_data_size)
+//Should be passed size of Game::item_data when loading game data
+//Should be passed size of Game::items when loading saved game
+bool Player::valid(int item_size)
 {
 	if (m_max_hp <= 0 || m_hp > m_max_hp)
 		return false;
@@ -48,22 +50,38 @@ bool Player::valid(int item_data_size)
 		return false;
 	if (m_level < 0)
 		return false;
-	for (int i{ 0 }; i < 4; ++i)
+
+	if (m_inventory_item_type[1] != ItemType::PLACEHOLDER) //If not placeholder, we are loading a saved game, check validity of item type
 	{
-		//NOTHING is defined to be the first possible item type with an int value of -1, while magical potion should be the last possible type
-		if (static_cast<int>(m_inventory_item_type[i]) < static_cast<int>(ItemType::NOTHING) || 
-			static_cast<int>(m_inventory_item_type[i]) >= static_cast<int>(ItemType::MAGICALPOTION))
-			return false;
+		for (int i{ 0 }; i < 4; ++i)
+		{
+			//NOTHING is defined to be the first possible item type with an int value of -1, while magical potion should be the last possible type
+			if (static_cast<int>(m_inventory_item_type[i]) < static_cast<int>(ItemType::NOTHING) ||
+				static_cast<int>(m_inventory_item_type[i]) >= static_cast<int>(ItemType::MAGICALPOTION))
+			{
+				return false;
+			}
+			//ID is defined to be -1 if there is nothing in the inventory
+			if (m_inventory_item_type[i] == ItemType::NOTHING && m_inventory_id[i] != -1)
+			{
+				return false;
+			}
+			//If there is an item, check if its item ID is correct (0 to Game::items.size() - 1)
+			if (m_inventory_item_type[i] != ItemType::NOTHING && (m_inventory_id[i] < 0 || m_inventory_id[i] > (item_size - 1)))
+			{
+				return false;
+			}
+		}
+		return true;
 	}
-	int max_item_type = item_data_size - 1;
-	for (int i{ 0 }; i < 4; ++i)
+
+	for (int i{ 0 }; i < 4; ++i) //Since item type is placeholder, we are only loading game data
 	{
-		//ID is defined to be -1 if there is nothing in the inventory
-		if (m_inventory_item_type[i] == ItemType::NOTHING && m_inventory_id[i] != -1)
-			return false;	
-		//If there is an item
-		if (m_inventory_item_type[i] != ItemType::NOTHING && (m_inventory_id[i] < 0 || m_inventory_id[i] > max_item_type))
+		//ID is valid is either nothing(-1) or within the indexes of item_data (0 to item_data.size() - 1)
+		if (m_inventory_id[i] < -1 || m_inventory_id[i] >= item_size) 
+		{
 			return false;
+		}
 	}
 	return true;
 }

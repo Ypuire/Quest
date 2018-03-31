@@ -11,7 +11,7 @@
 //
 namespace CONSTANTS
 {
-	constexpr char* VERSION_NUMBER = "v0.1.2";
+	constexpr char* VERSION_NUMBER = "v0.2.0";
 }
 
 //Utility functions

@@ -2,6 +2,8 @@
 
 #include <vector>
 #include "MiscFunctions.h"
+#include "DataLoader.h"
+#include "EventMsgHandler.h"
 #include "ItemsAndEntities.h"
 #include "Events.h"
 #include "Map.h"
@@ -33,8 +35,11 @@ private:
 
 	double time_left, max_time, current_time;
 
+	EventMsgHandler event_message_handler; //Holds messages from previous events (Should be cleared after being printed)
+
 	void loadItemsAndEntities();		//Throws if error loading/validating items and entites
-	void checkFilereaderStatus(const std::ifstream& filereader) const;	//Throws if the filereader failed or is at eof
+	void getName(DataLoader& data_loader, std::string& name);
+	void checkDataLoaderStatus(const DataLoader& data_loader) const;	//Throws if the filereader failed or is at eof
 	void placeItemsAndEntities();		//Throws if not enough tiles to place items/entities
 
 	//Map "refreshing" functions
@@ -44,10 +49,11 @@ private:
 	//Printing functions
 	void printMap() const;								//Shows the game board
 	void printTimeLeft() const;							//Prints the time left to complete the game
-	void printPlayerDetails() const;							//Prints the hero's hp,	exp, level, equipped weapon, inventory slots
+	void printPlayerDetails() const;					//Prints the hero's hp,	exp, level, equipped weapon, inventory slots
+	void printPlayerPosition() const;
 	void printVictoryMessage() const;					//Congratulates player on winning
 	void printGameOverMessage() const;					//Game over message
-	void printNameElementsOnPlayerTile() const;		//Prints what(Item/entity) is on the same tile as the player
+	void printObjectsOnPlayerTileDetails() const;			//Prints what(Item/entity) is on the same tile as the player
 	void printAvailablePlayerActions() const;			//Print available options the player can take
 	//void printNoSavePresent(char save_number) const;
 
@@ -69,25 +75,14 @@ private:
 	void playerMove(Player& player); //Not only moves the player but also sets visibility and explored elements of maptiles
 	void playerMoveRandomDirection(Player& player);
 	void setVisibilityAround(const Entity& entity, bool new_visibility);
-	void checkSurroundings();
+	void checkSurroundings(const Entity& entity);
 
 	void evaluateEvents();
-	/*void rawMoveUp(Entity& entity) { entity.setYCoord(entity.getXCoord() - 1); }
-	void rawMoveLeft(Entity& entity) {  entity.setXCoord(entity.getXCoord() - 1); }
-	void rawMoveRight(Entity& entity) { entity.setXCoord(entity.getXCoord() + 1); }
-	void rawMoveDown(Entity& entity) { entity.setYCoord(entity.getYCoord() + 1); }*/
 
 	bool canMoveUp(const Entity& entity) const;
 	bool canMoveLeft(const Entity& entity) const;
 	bool canMoveRight(const Entity& entity) const;
 	bool canMoveDown(const Entity& entity) const;
-	/*bool isThePlayer(int identificationID) const;
-	bool isAnItem(int identificationID) const;
-	bool isAMob(int identificationID) const;
-	bool isAThreat(int identificationID) const;
-	int convertToItemID(int identificationID) { return identificationID - 1; }
-	int convertToMobID(int identificationID) { return identificationID - last_itemID - 1; }
-	int convertToThreatID(int identificationID) { return identificationID - last_mobID - 1; }*/
 
 	void start(); //Start Game
 	void cleanUpGame();
@@ -100,20 +95,20 @@ public:
 
 	void startNewGame()
 	{
-		if (!map.initialized)
+		if (!Game::map.initialized)
 		{
-			map.initializeNewMap(10, 10);
+			Game::map.initializeNewMap(10, 10);
 		}
-		placeItemsAndEntities();
-		updateEntireMapTileCharacter();
+		Game::placeItemsAndEntities();
+		Game::updateEntireMapTileCharacter();
 		//initializeDefaultValues();
-		need_update_map = false;
+		Game::need_update_map = false;
 		Game::game_state = GameState::ONGOING;
-		time_left = 100;
-		max_time = 100;
-		current_time = 0;
-		start();
-		cleanUpGame();
+		Game::time_left = 100;
+		Game::max_time = 100;
+		Game::current_time = 0;
+		Game::start();
+		Game::cleanUpGame();
 	}
 
 	//void startSavedGame()

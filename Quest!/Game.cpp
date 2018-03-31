@@ -1,10 +1,12 @@
 #include <iostream>
-#include <fstream>
+#include <iomanip>
 #include <string>
 #include "Game.h"
 
 void Game::start()
 {
+	std::cout << std::fixed << std::setprecision(2);
+
 	while (true)
 	{
 		printMap();
@@ -15,18 +17,22 @@ void Game::start()
 			Game::printPlayerDetails();
 			if (game_state == GameState::WON)
 			{
+				Game::event_message_handler.printMsgs();
 				printVictoryMessage();
 				return;
 			}
 			if (game_state == GameState::LOST)
 			{
+				Game::event_message_handler.printMsgs();
 				printGameOverMessage();
 				return;
 			}
 
 			bool input_valid;
-			printNameElementsOnPlayerTile();	//Print what is on the same tile at the player (Item/entity)
-			printAvailablePlayerActions();	//Move, inventory, check surroundings, save, exit
+			Game::printPlayerPosition();
+			Game::event_message_handler.printMsgs();
+			Game::printObjectsOnPlayerTileDetails();	//Print what is on the same tile at the player (Item/entity)
+			Game::printAvailablePlayerActions();	//Move, inventory, check surroundings, save, exit
 			do {
 
 				std::cin >> Game::user_input;
@@ -34,14 +40,13 @@ void Game::start()
 				{
 					if (Game::user_input == 'b' || Game::user_input == 'B')
 					{	//If here as a result of user choosing to swap item, but decided not to and went back, don't print invalid option
-						printMap();
-						printTimeLeft();	//Reprint
-						printPlayerDetails();
-						printNameElementsOnPlayerTile();
-						printAvailablePlayerActions();
+						Game::printMap();
+						Game::printTimeLeft();	//Reprint
+						Game::printPlayerDetails();
+						Game::printObjectsOnPlayerTileDetails();
+						Game::printAvailablePlayerActions();
 					}
-					else
-						printInvalidOption();
+					//Else, the message telling the player that he/she chose an invalid option and why will be printed by isPlayerActionValid
 					input_valid = false;
 				}
 				else 
@@ -52,13 +57,16 @@ void Game::start()
 			if (Game::game_state == GameState::EXITING)
 				return;
 			else if (Game::game_state == GameState::SAVING)
-				return; //Not implemented saving yet
+			{
+				std::cout << "Sorry, this has not been implemented yet\n";
+			}
 			else
 				Game::evaluateEvents();		//Attacked by mob/update shop/etc, update time(Non-player events)
 		} while (Game::need_update_map == false);	//Includes shop, encounter with mob
 	}
 }
 
+//Clears all variables defined at the start of the game to get ready for the next time its run
 void Game::cleanUpGame()
 {
 	Game::player.clear();
@@ -70,7 +78,6 @@ void Game::cleanUpGame()
 	//Game::threats.erase(); currently threats not used
 }
 
-//CHECKED
 //Prints a congratulatory message to the player
 //Should be called when victory condition met (Finding magical potion in time)
 void Game::printVictoryMessage() const
@@ -79,7 +86,6 @@ void Game::printVictoryMessage() const
 	std::cout << "You return home to give your grandfather the magical potion, and save his life!\n" << std::endl;
 }
 
-//CHECKED
 //Prints a game over message
 //Should be called when game over condition met (Not finding magical potion in time or dying)
 void Game::printGameOverMessage() const
@@ -97,18 +103,20 @@ void Game::printGameOverMessage() const
 	}
 }
 
-void Game::printNameElementsOnPlayerTile() const
+//Prints the name of the objects on the tile that the player is on (Including uses left for an item if there is any on the tile)
+void Game::printObjectsOnPlayerTileDetails() const
 {
 	int xcoord, ycoord;
 	Game::player[0].getCoords(xcoord, ycoord);
 	//If a mob or threat present
 	if (Game::map(xcoord, ycoord).getEntityType() == EntityType::MOB)
 	{
-		std::cout << "You are being attacked by a " << Game::mobs[Game::map(xcoord, ycoord).getEntityID()].getName() << "!\n";
+		std::cout << "You are in an encounter with a " << Game::mobs[Game::map(xcoord, ycoord).getEntityID()].getName()
+			<< "(Health: " << Game::mobs[Game::map(xcoord, ycoord).getEntityID()].getHealth() << ")!\n";
 	}
 	else if (Game::map(xcoord, ycoord).getEntityType() == EntityType::THREAT)
 	{
-		std::cout << "You are in constant threat from a " << Game::threat_data[Game::map(xcoord, ycoord).getEntityID()].getName() << "!\n";
+		std::cout << "You will constantly take damage from a " << Game::threat_data[Game::map(xcoord, ycoord).getEntityID()].getName() << "if you remain here!\n";
 	}
 	if (Game::map(xcoord, ycoord).getItemType() == ItemType::MAGICALPOTION)
 	{
@@ -116,22 +124,22 @@ void Game::printNameElementsOnPlayerTile() const
 	}
 	else if (Game::map(xcoord, ycoord).getItemType() != ItemType::NOTHING)
 	{
-		std::cout << "There is a " << Game::items[Game::map(xcoord, ycoord).getItemID()].getName() << " that you may wish to pick up.\n";
+		std::cout << "There is a " << Game::items[Game::map(xcoord, ycoord).getItemID()].getName() 
+			<< "(No. of uses left: "<< Game::items[Game::map(xcoord, ycoord).getItemID()].getUses() << ") that you may wish to pick up.\n";
 	}
 }
 
-//CHECKED EXCEPT object_id and player
 //Loads data for items, mobs and threats from Data.dat into a vector (For new entities to be copy constructed from)
 //Throws std::runtime_error (Should be caught by std::exception handler)
 void Game::loadItemsAndEntities()
 {
-	std::ifstream filereader{ "Data.dat" };
-	if (!filereader.is_open())
+	DataLoader data_loader{ "Data.dat" }; //rename
+	if (!data_loader.is_open())
 	{
 		throw std::runtime_error("Unable to load game data, please make sure Data.dat is in the same folder.");
 	}
 	
-	int code{ 0 }, current_code{ 0 };
+	int code{ -1 }, current_code{ 0 };
 	int object_typeid{ 0 };
 
 	//For loading every entity (For assets, set object_id to be -1 as they are not intended to be used as actual in-game objects, but as assets)
@@ -147,9 +155,9 @@ void Game::loadItemsAndEntities()
 	double run_chance;
 	//For loading Threat, no new unique variable needed
 
-	while (filereader.good())
+	while (data_loader())
 	{
-		filereader >> code;
+		data_loader >> code;
 		if (code < current_code || (code - 1) > current_code)
 			throw std::runtime_error("Data.dat: Incorrect code number or order read, game data cannot be loaded.");
 		if (code > current_code)
@@ -169,23 +177,11 @@ void Game::loadItemsAndEntities()
 		{
 			//Load item, code 0
 			//Get a name from within double quotes
-			name.erase();
-			while (filereader.peek() != '\"')
-			{
-				filereader.get();
-				checkFilereaderStatus(filereader);
-			}
-			filereader.get(); //Skip the first double quote and get into the actual name string
-			while (filereader.peek() != '\"')
-			{
-				name.push_back(filereader.get());
-				checkFilereaderStatus(filereader);
-			}
-			filereader.get();
+			getName(data_loader, name);
 
-			filereader >> item_type >> min_hp_change >> max_hp_change >> uses >> success_rate >> number_to_place;
+			data_loader >> item_type >> min_hp_change >> max_hp_change >> uses >> success_rate >> number_to_place;
 
-			checkFilereaderStatus(filereader);
+			checkDataLoaderStatus(data_loader);
 			Item item(name, static_cast<ItemType>(item_type), min_hp_change, max_hp_change, uses, success_rate, object_typeid, object_id);
 			if (!item.valid()) //Validate data, if invalid, throw (Passes size of item_data for validating inventory ids)
 			{
@@ -213,31 +209,13 @@ void Game::loadItemsAndEntities()
 			}
 
 			//Get a name from within double quotes
-			name.erase();
-			while (filereader.peek() != '\"')
-			{
-				filereader.get();
-				checkFilereaderStatus(filereader);
-			}
-			filereader.get(); //Skip the first double quote and get into the actual name string
-			while (filereader.peek() != '\"')
-			{
-				name.push_back(filereader.get());
-				checkFilereaderStatus(filereader);
-			}
-			filereader.get();
+			getName(data_loader, name);
 
 			int inventory_id[4];
-			int inventory_item_type[4];
-			filereader >> max_hp >> hp >> def >> exp >> level >> inventory_item_type[0] >> inventory_id[0]
-				>> inventory_item_type[1] >> inventory_id[1] >> inventory_item_type[2] >> inventory_id[2] >> inventory_item_type[3] >> inventory_id[3];
+			data_loader >> max_hp >> hp >> def >> exp >> level >> inventory_id[0] >> inventory_id[1] >> inventory_id[2] >> inventory_id[3];
 
-			checkFilereaderStatus(filereader);
-			Player player(name, max_hp, hp, def, exp, level, 
-				static_cast<ItemType>(inventory_item_type[0]), inventory_id[0], 
-				static_cast<ItemType>(inventory_item_type[1]), inventory_id[1],
-				static_cast<ItemType>(inventory_item_type[2]), inventory_id[2], 
-				static_cast<ItemType>(inventory_item_type[3]), inventory_id[3]);
+			checkDataLoaderStatus(data_loader);
+			Player player(name, max_hp, hp, def, exp, level, inventory_id[0], inventory_id[1], inventory_id[2], inventory_id[3]);
 			if (!player.valid(Game::item_data.size()))//validate data, if invalid, throw
 			{
 				throw std::runtime_error("Data.dat: Player data is invalid. A member variable value has been defined wrongly.");
@@ -250,23 +228,11 @@ void Game::loadItemsAndEntities()
 		{
 			//Load mob, code 2
 			//Get a name from within double quotes
-			name.erase();
-			while (filereader.peek() != '\"')
-			{
-				filereader.get();
-				checkFilereaderStatus(filereader);
-			}
-			filereader.get(); //Skip the first double quote and get into the actual name string
-			while (filereader.peek() != '\"')
-			{
-				name.push_back(filereader.get());
-				checkFilereaderStatus(filereader);
-			}
-			filereader.get();
+			getName(data_loader, name);
 
-			filereader >> max_hp >> hp >> def >> min_dmg >> max_dmg >> exp >> level >> run_chance >> number_to_place;
+			data_loader >> max_hp >> hp >> def >> min_dmg >> max_dmg >> exp >> level >> run_chance >> number_to_place;
 
-			checkFilereaderStatus(filereader);
+			checkDataLoaderStatus(data_loader);
 			Mob mob(name, max_hp, hp, def, min_dmg, max_dmg, exp, level, run_chance, object_typeid, object_id);
 			if (!mob.valid()) //Validate data, if invalid, throw
 			{
@@ -289,23 +255,11 @@ void Game::loadItemsAndEntities()
 		{
 			//Load threat, code 3
 			//Get a name from within double quotes
-			name.erase();
-			while (filereader.peek() != '\"')
-			{
-				filereader.get();
-				checkFilereaderStatus(filereader);
-			}
-			filereader.get(); //Skip the first double quote and get into the actual name string
-			while (filereader.peek() != '\"')
-			{
-				name.push_back(filereader.get());
-				checkFilereaderStatus(filereader);
-			}
-			filereader.get();
+			getName(data_loader, name);
 
-			filereader >> min_dmg >> max_dmg >> run_chance >> number_to_place;
+			data_loader >> min_dmg >> max_dmg >> run_chance >> number_to_place;
 			
-			checkFilereaderStatus(filereader);
+			checkDataLoaderStatus(data_loader);
 			Threat threat(name, min_dmg, max_dmg, run_chance, object_typeid, object_id);
 			if (!threat.valid()) //Validate data, if invalid, throw
 			{
@@ -326,26 +280,32 @@ void Game::loadItemsAndEntities()
 		}
 		case 4:
 		{
-			int total_to_spawn = 1; //Start with player counted
+			int total_items_to_spawn = 1; //Start with magical potion counted
+			int total_entities_to_spawn = 1; //Start with player counted
+			int mapsize = Game::map.getXSize() * Game::map.getYSize();
 			for (int i : item_number_to_place)
 			{
-				total_to_spawn += i;
+				total_items_to_spawn += i;
+			}
+			if (total_items_to_spawn > mapsize)
+			{
+				throw std::runtime_error("Data.dat: Total number of items to be placed is greater than total number of tiles, game cannot be instantiated.");
 			}
 			for (int i : mob_number_to_place)
 			{
-				total_to_spawn += i;
+				total_entities_to_spawn += i;
 			}
 			for (int i : threat_number_to_place)
 			{
-				total_to_spawn += i;
+				total_entities_to_spawn += i;
 			}
-			if (total_to_spawn > (Game::map.getXSize() * Game::map.getYSize()) )
+			if (total_entities_to_spawn > mapsize)
 			{
 				throw std::runtime_error("Data.dat: Total number of entities to be placed is greater than total number of tiles, game cannot be instantiated.");
 			}
 
 			//End of file, success load
-			filereader.close();
+			data_loader.close();
 			return;
 		}
 		default:
@@ -358,19 +318,31 @@ void Game::loadItemsAndEntities()
 	throw std::runtime_error("Data.dat: Data loader has failed, game data cannot be loaded.");
 }
 
-void Game::checkFilereaderStatus(const std::ifstream& filereader) const
+//Gets a name defined withint double quotes from a data file
+void Game::getName(DataLoader& data_loader, std::string& name)
 {
-	if (filereader.eof())
+	if (name.size() != 0)
+	{
+		name.clear();
+	}
+	if (data_loader.getWithinQuotes(name) < 0)
+	{ //Error occurred
+		throw std::runtime_error("Data.dat: " + data_loader.getErrorMsg());
+	}
+}
+
+void Game::checkDataLoaderStatus(const DataLoader& data_loader) const
+{
+	if (data_loader.eof())
 	{
 		throw std::runtime_error("Data.dat: Data loader unexpectedly reached end of file. File is incomplete/Syntax is wrong.");
 	}
-	if (filereader.fail())
+	if (data_loader.fail())
 	{
 		throw std::runtime_error("Data.dat: Data loader encountered unexpected input. Data is defined wrongly/Syntax is wrong.");
 	}
 }
 
-//CHECKED
 //Places the items and entities on the map
 //Should only be called ONCE, at the start of the game
 void Game::placeItemsAndEntities()
@@ -381,7 +353,6 @@ void Game::placeItemsAndEntities()
 	Game::player[0].setCoords(0, 0);
 	Game::map(0, 0).setExplored();
 	Game::setVisibilityAround(Game::player[0], true);
-
 
 	//Place magical potion
 	Game::map(9, 5).setItem(ItemType::MAGICALPOTION, 0);
@@ -401,6 +372,23 @@ void Game::placeItemsAndEntities()
 			Game::items[item_id].setCoords(xcoord, ycoord);
 		}
 	}
+
+	//Generate the items in player's starting inventory
+	for (int i{ 1 }; i < 5; ++i) //Inventory slot 1 to 4
+	{
+		if (Game::player[0].getInventorySlotItemID(i) != -1)
+		{
+			Game::items.push_back(Game::item_data[Game::player[0].getInventorySlotItemID(i)]);
+			Game::player[0].setInventorySlotItem(i, item_id, Game::item_data[Game::player[0].getInventorySlotItemID(i)].getItemType());
+			Game::items[item_id].setCoords(-1, -1);
+			++item_id;
+		}
+		else
+		{
+			Game::player[0].setInventorySlotItem(i, -1, ItemType::NOTHING);
+		}
+	}
+
 	//Reset object_id, this should be unique per type of object (ITEM, MOB, THREAT)
 	int entity_id = 0;
 	//Place Mobs
@@ -429,20 +417,8 @@ void Game::placeItemsAndEntities()
 			//Game::threats[object_id].setCoords(xcoord, ycoord); Threats dont store their own position
 		}
 	}
-
-	for (int i{ 1 }; i < 5; ++i) //Inventory slot 1 to 4
-	{
-		if (Game::player[0].getInventorySlotItemType(i) != ItemType::NOTHING)
-		{
-			Game::items.push_back(Game::item_data[Game::player[0].getInventorySlotItemID(i)]);
-			Game::player[0].setInventorySlotItem(i, item_id, Game::item_data[Game::player[0].getInventorySlotItemID(i)].getItemType());
-			Game::items[item_id].setCoords(-1, -1);
-			++item_id;
-		}
-	}
 }
 
-//CHECKED
 //Updates the character that will be printed to the screen when the tile is printed
 //Should be used when a change to the EntityType/ObjectType on that tile is made
 //If entity present, set to entity character, else if no entity, but object present, set to object character, else nothing
@@ -471,7 +447,6 @@ void Game::updateMapTileCharacter(int x, int y)
 	}
 }
 
-//CHECKED
 //Updates all the characters that will be printed to the screen when the map is printed
 //Should be used only when starting a new game or loading a saved game
 void Game::updateEntireMapTileCharacter()
@@ -488,7 +463,6 @@ void Game::updateEntireMapTileCharacter()
 	}
 }
 
-//CHECKED
 //Print the entire map on the screen
 void Game::printMap() const
 {
@@ -517,60 +491,47 @@ void Game::printMap() const
 	}
 }
 
-//CHECKED
 //Prints the amount of time passed since the game started and how much time is left to complete the game
 void Game::printTimeLeft() const
 {
 	std::cout << "Time passed: " << Game::current_time << "days\t" << "Amount of time left: " << Game::time_left << std::endl;
 }
 
-//CHECKED
 //Prints the amount of health the player has, and the items in his four inventory slots
 void Game::printPlayerDetails() const
 {
 	std::cout << "Health: " << Game::player[0].getHealth() << std::endl;
-	if (Game::player[0].getInventorySlotItemType(1) != ItemType::NOTHING)
+	for (int i{ 1 }; i < 5; ++i) //Print details of inventory slots 1 - 4
 	{
-		std::cout << "Inventory slot 1: " << Game::items[Game::player[0].getInventorySlotItemID(1)].getName() << '\t';
-	}
-	else
-	{
-		std::cout << "Inventory slot 1: NOTHING\t";
-	}
-	if (Game::player[0].getInventorySlotItemType(2) != ItemType::NOTHING)
-	{
-		std::cout << "Inventory slot 2: " << Game::items[Game::player[0].getInventorySlotItemID(2)].getName() << '\n';
-	}
-	else
-	{
-		std::cout << "Inventory slot 2: NOTHING\n";
-	}
-	if (Game::player[0].getInventorySlotItemType(3) != ItemType::NOTHING)
-	{
-		std::cout << "Inventory slot 3: " << Game::items[Game::player[0].getInventorySlotItemID(3)].getName() << '\t';
-	}
-	else
-	{
-		std::cout << "Inventory slot 3: NOTHING\t";
-	}
-	if (Game::player[0].getInventorySlotItemType(4) != ItemType::NOTHING)
-	{
-		std::cout << "Inventory slot 4: " << Game::items[Game::player[0].getInventorySlotItemID(4)].getName() << '\n';
-	}
-	else
-	{
-		std::cout << "Inventory slot 4: NOTHING\n";
+		if (Game::player[0].getInventorySlotItemType(i) != ItemType::NOTHING)
+		{
+			std::cout << "Inventory slot " << i << ": " << Game::items[Game::player[0].getInventorySlotItemID(i)].getName()
+				<< "(No. of uses left: " << Game::items[Game::player[0].getInventorySlotItemID(i)].getUses() << ")\t";
+		}
+		else
+		{
+			std::cout << "Inventory slot " << i << ": NOTHING\t\t\t";
+		}
+		if (i == 2 || i == 4)
+		{
+			std::cout << '\n';
+		}
 	}
 	//update with object id (item only) (??? 14/1)
 }
 
-//CHECKED
+//Prints the position of the player
+void Game::printPlayerPosition() const
+{
+	std::cout << Game::player[0].getName() << " is currently at (" << Game::player[0].getXCoord() << ", " << Game::player[0].getYCoord() << ")\n";
+}
+
 //Prints all the options available to the player to take in that situation
 void Game::printAvailablePlayerActions() const  
 {
 	if (Game::game_state == GameState::ENCOUNTER_MOB) //Use inventory slot 1-4, swap item, run
 	{
-		std::cout << "1)Use inventory slot 1\n2)Use inventory slot 2\n3)Use inventory slot 3\n4)Use inventory slot 4\n5)Swap item\n";
+		std::cout << "1)Use inventory slot 1\n2)Use inventory slot 2\n3)Use inventory slot 3\n4)Use inventory slot 4\n5)Pick up/swap/drop items\n";
 		int xcoord, ycoord;
 		Game::player[0].getCoords(xcoord, ycoord);
 		std::cout << "6)Run! (Chance of failure: " << Game::mobs[Game::map(xcoord, ycoord).getEntityID()].getRunChance() << "%)\ns)Save\ne)Exit\n";
@@ -578,7 +539,7 @@ void Game::printAvailablePlayerActions() const
 	//if Game::game_state == GameState::ENCOUNTER_SHOP);
 	else if (Game::game_state == GameState::ENCOUNTER_THREAT)
 	{
-		std::cout << "1)Use inventory slot 1\n2)Use inventory slot 2\n3)Use inventory slot 3\n4)Use inventory slot 4\n5)Swap item\n";
+		std::cout << "1)Use inventory slot 1\n2)Use inventory slot 2\n3)Use inventory slot 3\n4)Use inventory slot 4\n5)Pick up/swap/drop items\n";
 		int xcoord, ycoord;
 		Game::player[0].getCoords(xcoord, ycoord);
 		std::cout << "6)Run! (Chance of failure: " << Game::threat_data[Game::map(xcoord, ycoord).getEntityID()].getRunChance() << "%)\ns)Save\ne)Exit\n" ;
@@ -587,17 +548,99 @@ void Game::printAvailablePlayerActions() const
 	{
 		std::cout << "1)Move up\n" << "2)Move left\n" << "3)Move right\n" << "4)Move down\n";
 		std::cout << "5)Use inventory slot 1\n" << "6)Use inventory slot 2\n" << "7)Use inventory slot 3\n" << "8)Use inventory slot 4\n";
-		std::cout << "9)Check surroundings\n" << "0)Swap items\n" << "s)Save\n" << "e)Exit\n";
+		std::cout << "9)Check surroundings\n" << "0)Pick up/swap/drop items\n" << "s)Save\n" << "e)Exit\n";
 	}
 }
 
-//CHECKED may need to tweak threat
 //Checks if the option entered by the player is a valid option or not
+//Outputs a message if the action is invalid. Message details why option is invalid
 //Note: Sets the player's action if valid
 bool Game::isPlayerActionValid()
 {
-	//if (Game::hero.encounter == EncounterType::SHOP);
-	if (Game::game_state == GameState::ENCOUNTER_MOB)	//Use inventory slot 1, 2, 3, 4 (Weapon/Healing), swap item or run
+	if(Game::game_state == GameState::ONGOING) //Map movement, inventory, check surroundings, save, exit
+	{
+		switch (Game::user_input)
+		{
+		case '1': //Move up
+			if (Game::canMoveUp(Game::player[0]))
+			{
+				Game::player[0].setAction(Action::MOVE_UP);
+				return true;
+			}
+			else
+			{
+				std::cout << "Invalid option! You cannot move up, you are at the edge of the map.\n";
+				return false;
+			}
+		case '2': //Move left
+			if (Game::canMoveLeft(Game::player[0]))
+			{
+				Game::player[0].setAction(Action::MOVE_LEFT);
+				return true;
+			}
+			{
+				std::cout << "Invalid option! You cannot move left, you are at the edge of the map.\n";
+				return false;
+			}
+		case '3': //Move right
+			if (Game::canMoveRight(Game::player[0]))
+			{
+				Game::player[0].setAction(Action::MOVE_RIGHT);
+				return true;
+			}
+			{
+				std::cout << "Invalid option! You cannot move right, you are at the edge of the map.\n";
+				return false;
+			}
+		case '4': //Move down
+			if (Game::canMoveDown(Game::player[0]))
+			{
+				Game::player[0].setAction(Action::MOVE_DOWN);
+				return true;
+			}
+			{
+				std::cout << "Invalid option! You cannot move down, you are at the edge of the map.\n";
+				return false;
+			}
+		case '5': //Use inventory slot 1
+		case '6': //Use inventory slot 2
+		case '7': //Use inventory slot 3
+		case '8': //Use inventory slot 4
+			if (Game::player[0].getInventorySlotItemType(user_input - 52) == ItemType::HEALING) //Accept only healing items
+			{
+				Game::player[0].setAction(static_cast<Action>(static_cast<int>(Action::INVENTORY1) + Game::user_input - 53));
+				return true;
+			}
+			else if (Game::player[0].getInventorySlotItemType(user_input - 52) == ItemType::WEAPON)
+			{
+				std::cout << "Invalid option! You can't use a weapon when there is nothing to use it against.\n";
+				return false;
+			}
+			else //Nothing in that inventory slot
+			{
+				std::cout << "Invalid option! There is nothing in that inventory slot to use!\n";
+				return false;
+			}
+		case '9': //Check surroundings (Always possible when not in encounter)
+			Game::player[0].setAction(Action::CHECK_SURROUNDINGS);
+			return true;
+		case '0': //Go to swap item menu
+			return Game::isSwapItemCaseValid(); //Will output its own invalid option message
+		case 's':
+		case 'S':
+			Game::player[0].setAction(Action::SAVE);
+			return true;
+		case 'e':
+		case 'E':
+			Game::player[0].setAction(Action::EXIT);
+			return true;
+		default:
+			std::cout << "Invalid option! Option is unrecognised.\n";
+			return false;
+		}
+	}
+	//else if (Game::hero.encounter == EncounterType::SHOP);
+	else if (Game::game_state == GameState::ENCOUNTER_MOB)	//Use inventory slot 1, 2, 3, 4 (Weapon/Healing), swap item or run
 	{
 		switch (Game::user_input)
 		{
@@ -610,9 +653,13 @@ bool Game::isPlayerActionValid()
 				Game::player[0].setAction(static_cast<Action>(static_cast<int>(Action::INVENTORY1) + Game::user_input - 49));
 				return true;
 			}
-			else return false; 
-		case '5':
-			return isSwapItemCaseValid();
+			else
+			{
+				std::cout << "Invalid option! There is nothing in that inventory slot to use!\n";
+				return false;
+			}
+		case '5': //Go to swap item menu
+			return Game::isSwapItemCaseValid(); //Will output its own invalid option message
 		case '6': //Run
 			Game::player[0].setAction(Action::RUN);
 			return true;
@@ -625,25 +672,35 @@ bool Game::isPlayerActionValid()
 			Game::player[0].setAction(Action::EXIT);
 			return true;
 		default:
+			std::cout << "Invalid option! Option is unrecognised.\n";
 			return false;
 		}
 	}
-	else if (Game::game_state == GameState::ENCOUNTER_THREAT)
+	else //if (Game::game_state == GameState::ENCOUNTER_THREAT)
 	{
 		switch (Game::user_input)
 		{
-		case '1': //Use inventory1 (Healing item)
+		case '1': //Use inventory1
 		case '2':
 		case '3':
 		case '4':
-			if (Game::player[0].getInventorySlotItemType(user_input - 48) == ItemType::HEALING)
+			if (Game::player[0].getInventorySlotItemType(user_input - 48) == ItemType::HEALING) //Accept only healing items
 			{
 				Game::player[0].setAction(static_cast<Action>(static_cast<int>(Action::INVENTORY1) + Game::user_input - 49));
 				return true;
 			}
-			else return false;
-		case '5':
-			return isSwapItemCaseValid();
+			else if (Game::player[0].getInventorySlotItemType(user_input - 52) == ItemType::WEAPON)
+			{
+				std::cout << "Invalid option! You can't use a weapon against a threat.\n";
+				return false;
+			}
+			else //Nothing in that inventory slot
+			{
+				std::cout << "Invalid option! There is nothing in that inventory slot to use!\n";
+				return false;
+			}
+		case '5': //Go to swap item menu
+			return Game::isSwapItemCaseValid(); //Will output its own invalid option message
 		case '6': //Run
 			Game::player[0].setAction(Action::RUN);
 			return true;
@@ -656,100 +713,46 @@ bool Game::isPlayerActionValid()
 			Game::player[0].setAction(Action::EXIT);
 			return true;
 		default:
-			return false;
-		}
-	}
-	else //if(Game::game_state == GameState::ONGOING) Map movement, inventory, check surroundings, save, exit
-	{
-		switch (Game::user_input)
-		{
-		case '1': //Move up
-			if (Game::canMoveUp(Game::player[0]))
-			{
-				Game::player[0].setAction(Action::MOVE_UP);
-				return true;
-			}
-			return false;
-		case '2': //Move left
-			if (Game::canMoveLeft(Game::player[0]))
-			{
-				Game::player[0].setAction(Action::MOVE_LEFT);
-				return true;
-			}
-			return false;
-		case '3': //Move right
-			if (Game::canMoveRight(Game::player[0]))
-			{
-				Game::player[0].setAction(Action::MOVE_RIGHT);
-				return true;
-			}
-			return false;
-		case '4': //Move down
-			if (Game::canMoveDown(Game::player[0]))
-			{
-				Game::player[0].setAction(Action::MOVE_DOWN);
-				return true;
-			}
-			return false;
-		case '5': //Use inventory slot 1
-		case '6': //Use inventory slot 2
-		case '7': //Use inventory slot 3
-		case '8': //Use inventory slot 4
-			if (Game::player[0].getInventorySlotItemType(user_input - 52) == ItemType::HEALING) //Accept only healing items
-			{
-				Game::player[0].setAction(static_cast<Action>(static_cast<int>(Action::INVENTORY1) + Game::user_input - 53));
-				return true;
-			}
-			else //May add special case for weapon saying that weapon cannot be used while not in an encounter
-				return false;
-		case '9': //Check surroundings
-			Game::player[0].setAction(Action::CHECK_SURROUNDINGS);
-			return true;
-		case '0': //Go to swap item menu
-			return isSwapItemCaseValid();
-		case 's':
-		case 'S':
-			Game::player[0].setAction(Action::SAVE);
-			return true;
-		case 'e':
-		case 'E':
-			Game::player[0].setAction(Action::EXIT);
-			return true;
-		default:
+			std::cout << "Invalid option! Option is unrecognised.\n";
 			return false;
 		}
 	}
 }
 
-//Checked
-//Prompts the player which inventory slot's item the player would want to swap for the item on the tile they are on
-//Returns true if valid option for which slot
+//Prompts the player which inventory slot's item the player would want to use to swap items
+//Swapping also applies to if either the tile or the inventory slot has no item in it (Is empty)
+//Returns true if valid option for chosen slot
 //Returns false if not, or if user wants to go back to previous options
 bool Game::isSwapItemCaseValid()
 {
 	for (;;)
 	{
-		std::cout << "Swap item from inventory slot: 1, 2, 3 or 4? (Enter 'b' to go back)\n";
+		std::cout << "Pick up/swap/drop item using inventory slot: 1, 2, 3 or 4? (Enter 'b' to go back)\n";
 		std::cin >> Game::user_input;
 		switch (Game::user_input)
 		{
-		case '1': //Swap item with inventory slot 1
-		case '2': //Swap item with inventory slot 2
-		case '3': //Swap item with inventory slot 3
-		case '4': //Swap item with inventory slot 4
+		case '1': //Pick up/swap/drop item with inventory slot 1
+		case '2': //Pick up/swap/drop item with inventory slot 2
+		case '3': //Pick up/swap/drop item with inventory slot 3
+		case '4': //Pick up/swap/drop item with inventory slot 4
 		{
-			if (Game::map(player[0].getXCoord(), player[0].getYCoord()).getItemType() != ItemType::NOTHING)
+			if (Game::map(player[0].getXCoord(), player[0].getYCoord()).getItemType() == ItemType::NOTHING && 
+				Game::player[0].getInventorySlotItemType(user_input - 48) == ItemType::NOTHING) //No item on both the tile nor in the chosen inventory slot
+			{
+				std::cout << "Invalid option! There is nothing that can be picked up/swapped/dropped.\n";
+				return false;
+			}
+			else
 			{
 				Game::player[0].setAction(static_cast<Action>(static_cast<int>(Action::SWAP_ITEM1) + (Game::user_input - 49))); //;) reducing repeated code
 				return true;
 			}
-			else
-				return false;
 		}
 		case 'b':
 		case 'B':
 			return false; //But will not print invalid option (Backed by caller)
 		default:
+			std::cout << "Invalid option! Option is unrecognised.\n";
 			return false;
 		}
 	}
@@ -758,7 +761,6 @@ bool Game::isSwapItemCaseValid()
 //Evaluates the player's action (Moves player, then check for encounter, use inventory, etc)
 void Game::evaluatePlayerAction()
 {
-	//During encounter with a threat, there are no player options---
 	//During encounter with mob, use inventory option is implemented together with that of an encounter with nothing
 	switch (Game::player[0].getAction())
 	{
@@ -768,7 +770,7 @@ void Game::evaluatePlayerAction()
 	case Action::MOVE_DOWN:
 	{
 		Game::playerMove(Game::player[0]);
-		Game::evaluatePossibleEncounter();
+		Game::evaluatePossibleEncounter(); //Handles need_update_map
 		Game::advanceTime(1);
 		break;
 	}
@@ -781,12 +783,12 @@ void Game::evaluatePlayerAction()
 		int inventory_slot_number = static_cast<int>(Game::player[0].getAction()) - static_cast<int>(Action::INVENTORY1) + 1;
 		if (Game::player[0].getInventorySlotItemType(inventory_slot_number) == ItemType::HEALING)
 		{
-			Game::useHealingItemSlot(inventory_slot_number);
+			Game::useHealingItemSlot(inventory_slot_number); //Handles need_update_map
 			Game::advanceTime(0.25);
 		}
 		else //if( Game::player[0].getInventorySlotItemType(inventory_slot_number) == ItemType::WEAPON)
 		{	//If is weapon, and execution reached here, that means player is definitely in encounter with mob and not in any other game state
-			Game::useWeaponItemSlot(inventory_slot_number);
+			Game::useWeaponItemSlot(inventory_slot_number); //Handles need_update_map
 			Game::advanceTime(0.25);
 			//use weapon against mob
 		}
@@ -806,12 +808,21 @@ void Game::evaluatePlayerAction()
 		Game::player[0].getCoords(xcoord, ycoord);
 		Game::player[0].setInventorySlotItem(inventory_slot_number, Game::map(xcoord, ycoord).getItemID(), Game::map(xcoord, ycoord).getItemType());
 		Game::map(xcoord, ycoord).setItem(inventory_item_type, inventory_item_id);
-		Game::need_update_map = false;
+		Game::event_message_handler.addEventMsg("Successfully picked up/swapped/dropped items.");
+		if (Game::game_state == GameState::ONGOING)
+		{ 
+			Game::need_update_map = true;
+		}
+		else //In any encounter
+		{
+			Game::need_update_map = false;
+		}
 		Game::advanceTime(0.5);
 		break;
 	}
 	case Action::CHECK_SURROUNDINGS:
-		Game::checkSurroundings();
+		Game::checkSurroundings(Game::player[0]);
+		Game::event_message_handler.addEventMsg("You checked your surroundings carefully...");
 		Game::need_update_map = true;
 		Game::advanceTime(3);
 		break;
@@ -830,23 +841,31 @@ void Game::evaluatePlayerAction()
 		{
 			if (Game::player[0].runFrom(Game::mobs[entity_id])) //If run successful
 			{
+				Game::event_message_handler.addEventMsg("You ran away successfully.");
 				playerMoveRandomDirection(Game::player[0]);
-				evaluatePossibleEncounter();
+				evaluatePossibleEncounter(); //Handles need_update_map
 				advanceTime(1);
 			}
 			else
+			{
+				Game::event_message_handler.addEventMsg("You failed to run away!");
 				Game::need_update_map = false;
+			}
 		}
 		else if (Game::map(xcoord, ycoord).getEntityType() == EntityType::THREAT)
 		{
 			if (Game::player[0].runFrom(Game::threat_data[entity_id])) //If run successful
 			{
+				Game::event_message_handler.addEventMsg("You ran away successfully.");
 				playerMoveRandomDirection(Game::player[0]);
-				evaluatePossibleEncounter();
+				evaluatePossibleEncounter(); //Handles need_update_map
 				advanceTime(1);
 			}
 			else
+			{
+				Game::event_message_handler.addEventMsg("You failed to run away!");
 				Game::need_update_map = false;
+			}
 		}
 		break;
 	}
@@ -859,16 +878,19 @@ void Game::evaluatePlayerAction()
 void Game::evaluatePossibleEncounter()
 {
 	EntityType entity_on_tile_type = Game::map(player[0].getXCoord(), player[0].getYCoord()).getEntityType();
+	int entity_id = Game::map(player[0].getXCoord(), player[0].getYCoord()).getEntityID();
 	if (entity_on_tile_type == EntityType::MOB)
 	{
 		Game::game_state = GameState::ENCOUNTER_MOB;
 		Game::first_time_in_encounter_mob = true;
+		Game::event_message_handler.addEventMsg("You have encountered a " + Game::mobs[entity_id].getName() + "! Prepare yourself!");
 		//encounter msg
 		Game::need_update_map = false;
 	}
 	else if (entity_on_tile_type == EntityType::THREAT)
 	{
 		Game::game_state = GameState::ENCOUNTER_THREAT;
+		Game::event_message_handler.addEventMsg("You have encountered a " + Game::threat_data[entity_id].getName() + "! Run!");
 		Game::need_update_map = false;
 	}
 	else //(entity_on_tile_type == EntityType::NOTHING)
@@ -879,18 +901,20 @@ void Game::evaluatePossibleEncounter()
 }
 
 
-//Uses item (Confirmed ObjectType::HEALING) in the inventory slot (@arg) to heal player
+//Uses item (Confirmed ObjectType::HEALING) in the inventory slot to heal player
 void Game::useHealingItemSlot(int inventory_slot_number)
 {
 	int item_id = Game::player[0].getInventorySlotItemID(inventory_slot_number);
 	int heal_amount = getRandomInt(Game::items[item_id].getMinHpChange(), Game::items[item_id].getMaxHpChange());
 	Game::player[0].heal(heal_amount);
+	Game::event_message_handler.addEventMsg("You heal for " + std::to_string(heal_amount) + " points of health");
 	Game::items[item_id].decrementUses();
 	if (Game::items[item_id].getUses() == 0)
 	{
 		//Manage used up items
 		Game::player[0].setInventorySlotItem(inventory_slot_number, -1, ItemType::NOTHING);
 		logUsedItem(item_id);
+		Game::event_message_handler.addEventMsg("Your item has been used up.");
 	}
 	Game::need_update_map = false;
 }
@@ -903,18 +927,21 @@ void Game::useWeaponItemSlot(int inventory_slot_number)
 	Game::player[0].getCoords(xcoord, ycoord);
 	int entity_id = Game::map(xcoord, ycoord).getEntityID();
 	Game::mobs[entity_id].takeDamage(damage_amount);
+	Game::event_message_handler.addEventMsg("You attack the " + Game::mobs[entity_id].getName() + " for " + std::to_string(damage_amount) + " points of damage!");
 	Game::items[item_id].decrementUses();
 	if (Game::items[item_id].getUses() == 0)
 	{
 		//Manage used up items
 		Game::player[0].setInventorySlotItem(inventory_slot_number, -1, ItemType::NOTHING);
 		logUsedItem(item_id);
+		Game::event_message_handler.addEventMsg("Your item has been used up.");
 	}
 	if (Game::mobs[entity_id].isDead())
 	{
 		Game::game_state = GameState::ONGOING;
 		Game::map(xcoord, ycoord).setEntity(EntityType::PLAYER, 0);
 		logDeadMob(entity_id);
+		Game::event_message_handler.addEventMsg("The " + Game::mobs[entity_id].getName() + " dies!");
 		Game::need_update_map = true;
 		return;
 	}
@@ -935,15 +962,20 @@ void Game::playerMove(Player& player)
 	{
 	case Action::MOVE_UP:
 		player.setYCoord(ycoord - 1);
+		Game::event_message_handler.addEventMsg("You moved up.");
 		break;
 	case Action::MOVE_LEFT:
 		player.setXCoord(xcoord - 1);
+		Game::event_message_handler.addEventMsg("You moved left.");
 		break;
 	case Action::MOVE_RIGHT:
 		player.setXCoord(xcoord + 1);
+		Game::event_message_handler.addEventMsg("You moved right.");
 		break;
 	case Action::MOVE_DOWN:
 		player.setYCoord(ycoord + 1);
+		Game::event_message_handler.addEventMsg("You moved down.");
+		break;
 	}
 	player.getCoords(xcoord, ycoord);
 	if (Game::map(xcoord, ycoord).getEntityType() == EntityType::NOTHING) //Will not have encounter
@@ -990,7 +1022,6 @@ void Game::playerMoveRandomDirection(Player& player)
 	playerMove(Game::player[0]);
 }
 
-//CHECKED
 //Sets the visibility of all 8 surrounding tiles and the tile that the entity is on to new_visibility
 void Game::setVisibilityAround(const Entity& entity, bool new_visibility)
 {
@@ -1017,10 +1048,11 @@ void Game::setVisibilityAround(const Entity& entity, bool new_visibility)
 		Game::map(xcoord + 1, ycoord).setVisible(new_visibility);
 }
 
-void Game::checkSurroundings()
+//Sets the all 8 tiles surrounding the entity to be explored
+void Game::checkSurroundings(const Entity& entity)
 {
 	int xcoord, ycoord;
-	Game::player[0].getCoords(xcoord, ycoord);
+	entity.getCoords(xcoord, ycoord);
 	int map_xsize = Game::map.getXSize(), map_ysize = Game::map.getYSize();
 
 	//Game::map(xcoord, ycoord).setExplored; //Set for the tile that the entity is on (Not needed as it is already set when moved to that tile)
@@ -1064,6 +1096,7 @@ void Game::evaluateEvents()
 			int entity_id = Game::map(Game::player[0].getXCoord(), Game::player[0].getYCoord()).getEntityID();
 			int damage_amount = getRandomInt(Game::mobs[entity_id].getMinDmg(), Game::mobs[entity_id].getMaxDmg());
 			Game::player[0].takeDamage(damage_amount);
+			Game::event_message_handler.addEventMsg("The " + Game::mobs[entity_id].getName() + " attacks you for " + std::to_string(damage_amount) + " points of damage!");
 		}
 		Game::first_time_in_encounter_mob = false;
 	}
@@ -1072,13 +1105,13 @@ void Game::evaluateEvents()
 		int entity_id = Game::map(Game::player[0].getXCoord(), Game::player[0].getYCoord()).getEntityID();
 		int damage_amount = getRandomInt(Game::threat_data[entity_id].getMinDmg(), Game::threat_data[entity_id].getMaxDmg());
 		Game::player[0].takeDamage(damage_amount);
+		Game::event_message_handler.addEventMsg("The " + Game::threat_data[entity_id].getName() + " causes you to lose " + std::to_string(damage_amount) + " points of health!");
 	}
 
 	if (playerDied())
 		Game::game_state = GameState::LOST;
 }
 
-//CHECKED
 //Adjusts time_left and the current_time accordingly
 //Note: Changes time_left to 0 if time_to_pass exceeds time_left
 void Game::advanceTime(double time_to_pass)
@@ -1086,22 +1119,27 @@ void Game::advanceTime(double time_to_pass)
 	Game::time_left -= time_to_pass; 
 	Game::current_time += time_to_pass;
 	if (Game::time_left < 0.0)
+	{
 		Game::time_left = 0.0;
+	}
+	int whole_time_to_pass = static_cast<int>(time_to_pass); //Hold the whole number part of time_to_pass
+	int decimal_time_to_pass = static_cast<int>(time_to_pass * 100) - whole_time_to_pass * 100; //Hold the decimal part of time_to_pass
+
+	Game::event_message_handler.addEventMsg(std::to_string(whole_time_to_pass) + '.' + std::to_string(decimal_time_to_pass) + " Days have passed...");
 }
 
-//CHECKED
 //Checks if there is no time left to find the magical potion
 //Returns true if no time left
 //Returns false if there is still time
 bool Game::noTimeLeft() const
 {
 	if (Game::time_left == 0)
+	{
 		return true;
-	//else
+	}
 	return false;
 }
 
-//CHECKED
 //Checks if the player has died
 //Returns true if so
 //Returns false if not
@@ -1113,7 +1151,6 @@ bool Game::playerDied() const
 	return false;
 }
 
-//CHECKED
 //Checks if the player has the magical potion in any of his four inventory slots
 //Returns true if so
 //Returns false if not
@@ -1128,7 +1165,6 @@ bool Game::playerHasMagicalPotion() const
 	return false;
 }
 
-//CHECKED
 //Checks if an entity can move up
 bool Game::canMoveUp(const Entity& entity) const
 {
@@ -1137,7 +1173,6 @@ bool Game::canMoveUp(const Entity& entity) const
 	return false;
 }
 
-//CHECKED
 //Checks if an entity can move left
 bool Game::canMoveLeft(const Entity& entity) const
 {
@@ -1146,7 +1181,6 @@ bool Game::canMoveLeft(const Entity& entity) const
 	return false;
 }
 
-//CHECKED
 //Checks if an enttiy can move right
 bool Game::canMoveRight(const Entity& entity) const
 {
@@ -1155,7 +1189,6 @@ bool Game::canMoveRight(const Entity& entity) const
 	return false;
 }
 
-//CHECKED
 //Checks if an entity can move down
 bool Game::canMoveDown(const Entity& entity) const
 {
@@ -1163,32 +1196,3 @@ bool Game::canMoveDown(const Entity& entity) const
 		return true;
 	return false;
 }
-
-
-//bool Game::isThePlayer(int identificationID) const
-//{
-//	if (identificationID == 0)
-//		return true;
-//	return false;
-//}
-//
-//bool Game::isAnItem(int identificationID) const
-//{
-//	if (identificationID > 0 && identificationID <= Game::last_itemID)
-//		return true;
-//	return false;
-//}
-//
-//bool Game::isAMob(int identificationID) const
-//{
-//	if (identificationID > Game::last_itemID && identificationID <= Game::last_mobID)
-//		return true;
-//	return false;
-//}
-//
-//bool Game::isAThreat(int identificationID) const
-//{
-//	if (identificationID > Game::last_mobID && identificationID <= Game::last_threatID)
-//		return true;
-//	return false;
-//}

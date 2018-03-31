@@ -6,6 +6,7 @@
 
 enum class ItemType
 {
+	PLACEHOLDER = -2,
 	NOTHING = -1,
 	HEALING,
 	WEAPON,
@@ -173,9 +174,10 @@ class Player final : public Entity
 	Action m_action;
 
 public:
-	Player(const std::string& name, int max_hp, int hp, int def, int exp, int level,
-		ItemType inventory1_item_type, int inventory1_id, ItemType inventory2_item_type, int inventory2_id, 
-		ItemType inventory3_item_type, int inventory3_id, ItemType inventory4_item_type, int inventory4_id)
+	Player(const std::string& name, int max_hp, int hp, int def, int exp, int level, 
+		int inventory1_id, int inventory2_id, int inventory3_id, int inventory4_id,
+		ItemType inventory1_item_type = ItemType::PLACEHOLDER, ItemType inventory2_item_type = ItemType::PLACEHOLDER,
+		ItemType inventory3_item_type = ItemType::PLACEHOLDER, ItemType inventory4_item_type = ItemType::PLACEHOLDER)
 		: Entity(EntityType::PLAYER, name, max_hp, hp, def, 0, 0, exp, level, 0, false), //Initially 0 min dmg and 0 max dmg, identification ID for player is 0, is not dead
 		m_inventory_item_type{ inventory1_item_type ,inventory2_item_type ,inventory3_item_type ,inventory4_item_type },
 		m_inventory_id{ inventory1_id ,inventory2_id, inventory3_id, inventory4_id }
@@ -187,7 +189,7 @@ public:
 		//equipped slot
 	}
 
-	bool valid(int item_data_size);
+	bool valid(int item_size);
 
 	//int getEncounterID() const { return m_encounterID; }
 	int getInventorySlotItemID(int inventory_slot_number) const { return m_inventory_id[inventory_slot_number - 1]; } //Insert inventory slot number, not index
